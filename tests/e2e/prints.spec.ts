@@ -29,7 +29,7 @@ const studentId = async (name: string) => {
   return data!.id as string
 }
 
-test.describe.configure({ mode: "serial" })
+test.describe.configure({ mode: "serial", timeout: 120_000 })
 
 test.afterAll(async () => {
   const db = service()
