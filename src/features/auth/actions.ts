@@ -45,7 +45,11 @@ export async function signIn(_: FormState, formData: FormData): Promise<FormStat
   const staff = await getStaff()
   if (!staff || !staff.active) {
     await supabase.auth.signOut()
-    return { error: "Sua conta está desativada. Fale com o Gabriel para liberar o acesso." }
+    return {
+      error: staff
+        ? "Sua conta está desativada. Fale com o Gabriel para liberar o acesso."
+        : "Sua conta ainda não está liberada no app. Fale com o Gabriel.",
+    }
   }
   if (staff.must_change_password) redirect("/primeiro-acesso")
   redirect(safeNext(formData.get("voltar")) ?? homePath(staff.role))

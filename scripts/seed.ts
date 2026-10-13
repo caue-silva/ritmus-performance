@@ -72,6 +72,12 @@ function cpf(seed: number) {
 }
 
 const isoDaysAgo = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString()
+const today = () => new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" })
+function addDaysISO(iso: string, days: number) {
+  const d = new Date(`${iso}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
+}
 
 // Horários fixos: quem dá aula em cada hora (seg a sex) + sábado.
 const WEEKDAY_TIMES: Record<string, StaffKey> = {
@@ -146,7 +152,21 @@ const STUDENTS: SeedStudent[] = [
 
 const GOALS = [["Emagrecer"], ["Ganhar massa muscular"], ["Condicionamento", "Saúde"], ["Emagrecer", "Condicionamento"], ["Saúde"]]
 
+/** Depois do `supabase db reset` os serviços reiniciam: espera Auth e API responderem. */
+async function waitForServices() {
+  for (let attempt = 1; attempt <= 30; attempt++) {
+    const [auth, rest] = await Promise.all([
+      db.auth.admin.listUsers({ perPage: 1 }).catch((e) => ({ error: e })),
+      db.from("studio_settings").select("id").limit(1),
+    ])
+    if (!auth.error && !rest.error) return
+    await new Promise((r) => setTimeout(r, 1000))
+  }
+  throw new Error("O Supabase local não respondeu em 30s. Ele está rodando? (npm run db:start)")
+}
+
 async function main() {
+  await waitForServices()
   const ids = {} as Record<StaffKey, string>
   for (const s of SEED_STAFF) ids[s.key] = await ensureUser(s)
   console.log("✔ Equipe:", SEED_STAFF.map((s) => s.email).join(", "))
@@ -270,6 +290,69 @@ async function main() {
     }
   }
   console.log(`✔ ${STUDENTS.length} alunos com PAR-Q, valores e ${enrollments} horários fixos`)
+
+  // ---------------------------------------------------------------------------
+  // Agenda: feriados, 8 semanas de aulas passadas (presenças/faltas) e 2 semanas à frente
+  // ---------------------------------------------------------------------------
+  const year = Number(today().slice(0, 4))
+  must(
+    await db.from("closures").insert([
+      { date: `${year}-11-02`, reason: "Finados" },
+      { date: `${year}-11-20`, reason: "Consciência Negra" },
+      { date: `${year}-12-25`, reason: "Natal" },
+    ]),
+  )
+  const from = addDaysISO(today(), -56)
+  must(await db.rpc("ensure_sessions", { p_from: from, p_to: addDaysISO(today(), 14) }))
+
+  const { data: past } = await db
+    .from("attendances")
+    .select("id, student_id, session_id, class_sessions!inner(date, start_time, personal_id)")
+    .lt("class_sessions.date", today())
+  let rnd = 42
+  const random = () => ((rnd = (rnd * 1103515245 + 12345) % 2 ** 31) / 2 ** 31)
+  const updates: { id: string; status: "presente" | "falta" | "falta_justificada"; checked_in_at: string | null }[] = []
+  for (const a of past ?? []) {
+    const r = random()
+    const status = r < 0.86 ? "presente" : r < 0.95 ? "falta" : "falta_justificada"
+    const s = a.class_sessions as unknown as { date: string; start_time: string }
+    updates.push({ id: a.id, status, checked_in_at: status === "presente" ? `${s.date}T${s.start_time}-03:00` : null })
+  }
+  for (const u of updates) {
+    must(await db.from("attendances").update({ status: u.status, checked_in_at: u.checked_in_at }).eq("id", u.id))
+  }
+
+  // Reposições passadas: um aluno que faltou repõe numa aula do próprio personal com vaga.
+  const { data: misses } = await db
+    .from("attendances")
+    .select("student_id, class_sessions!inner(date, personal_id)")
+    .eq("status", "falta_justificada")
+    .limit(6)
+  let makeups = 0
+  for (const m of misses ?? []) {
+    const cs = m.class_sessions as unknown as { date: string; personal_id: string }
+    const { data: options } = await db
+      .from("session_occupancy")
+      .select("session_id, date, start_time, taken, capacity")
+      .eq("personal_id", cs.personal_id)
+      .eq("status", "normal")
+      .gt("date", cs.date)
+      .lt("date", today())
+      .order("date")
+      .limit(10)
+    const target = (options ?? []).find((o) => (o.taken ?? 0) < (o.capacity ?? 4))
+    if (!target) continue
+    const { error } = await db.from("attendances").insert({
+      session_id: target.session_id!,
+      student_id: m.student_id,
+      kind: "reposicao",
+      status: "presente",
+      checked_in_at: `${target.date}T${target.start_time}-03:00`,
+      created_by: cs.personal_id,
+    })
+    if (!error) makeups++
+  }
+  console.log(`✔ Agenda: ${updates.length} presenças passadas, ${makeups} reposições, 3 feriados`)
 
   // Pré-cadastro com link enviado (formulário ainda não preenchido)
   const invited = must(

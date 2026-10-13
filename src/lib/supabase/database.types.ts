@@ -50,6 +50,12 @@ isOneToOne: false
       referencedRelation: "class_sessions"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "attendances_session_id_fkey"
+      columns: ["session_id"]
+isOneToOne: false
+      referencedRelation: "session_occupancy"
+      referencedColumns: ["session_id"]
+    },{
       foreignKeyName: "attendances_status_changed_by_fkey"
       columns: ["status_changed_by"]
 isOneToOne: false
@@ -302,6 +308,12 @@ isOneToOne: false
       referencedRelation: "class_sessions"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "measurements_session_id_fkey"
+      columns: ["session_id"]
+isOneToOne: false
+      referencedRelation: "session_occupancy"
+      referencedColumns: ["session_id"]
+    },{
       foreignKeyName: "measurements_student_id_fkey"
       columns: ["student_id"]
 isOneToOne: false
@@ -492,6 +504,32 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"session_occupancy": {
+                  Row: {
+                    "capacity": number | null,"date": string | null,"makeups": number | null,"personal_id": string | null,"present": number | null,"session_id": string | null,"start_time": string | null,"status": Database["public"]['Enums']["session_status"] | null,"status_reason": string | null,"taken": number | null,"time_slot_id": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "class_sessions_personal_id_fkey"
+      columns: ["personal_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "class_sessions_time_slot_id_fkey"
+      columns: ["time_slot_id"]
+isOneToOne: false
+      referencedRelation: "time_slot_occupancy"
+      referencedColumns: ["time_slot_id"]
+    },{
+      foreignKeyName: "class_sessions_time_slot_id_fkey"
+      columns: ["time_slot_id"]
+isOneToOne: false
+      referencedRelation: "time_slots"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"time_slot_occupancy": {
                   Row: {
                     "active": boolean | null,"capacity": number | null,"personal_id": string | null,"start_time": string | null,"taken": number | null,"time_slot_id": string | null,"weekday": number | null
@@ -512,6 +550,9 @@ isOneToOne: false
             "activate_student":
 { Args: { "p_due_day": number,"p_fee_cents": number,"p_personal_id": string,"p_slot_ids": (string)[],"p_student_id": string,"p_weekly_frequency": number }; Returns: (string)[]
                            },
+"ensure_sessions":
+{ Args: { "p_from": string,"p_to": string }; Returns: undefined
+                           },
 "release_student":
 { Args: { "p_status": Database["public"]['Enums']["student_status"],"p_student_id": string }; Returns: undefined
                            },
@@ -519,6 +560,19 @@ isOneToOne: false
 { Args: { "max_results"?: number,"q": string }; Returns: {
               "full_name": string,"id": string,"status": Database["public"]['Enums']["student_status"],"whatsapp": string
             }[]
+                           },
+"search_students_for_makeup":
+{ Args: { "p_session_id": string,"q": string }; Returns: {
+              "full_name": string,"id": string,"is_mine": boolean,"owner_name": string
+            }[]
+                           },
+"session_roster":
+{ Args: { "p_session_id": string }; Returns: {
+              "attendance_id": string,"checked_in_at": string,"created_at": string,"created_by_name": string,"full_name": string,"health_flag": boolean,"is_mine": boolean,"kind": Database["public"]['Enums']["attendance_kind"],"owner_name": string,"status": Database["public"]['Enums']["attendance_status"],"student_id": string
+            }[]
+                           },
+"set_student_schedule":
+{ Args: { "p_slot_ids": (string)[],"p_student_id": string }; Returns: undefined
                            },
 "submit_signup":
 { Args: { "p_data": Json,"p_doc_ids": (string)[],"p_ip": unknown,"p_token_hash": string,"p_user_agent": string }; Returns: string

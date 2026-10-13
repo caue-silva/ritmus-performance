@@ -36,6 +36,8 @@ O seed imprime o link de cadastro do pré-cadastro "Carolina Dias" (para testar 
 - Regras de negócio que importam (capacidade 4, um horário por vez, ativação exige liberação médica, quem pode mudar status) são garantidas por **constraint/trigger no banco**, com mensagem de erro em pt-BR — a UI só repete a regra.
 - Service role: só `src/lib/supabase/admin.ts` (`server-only`), e só para contas da equipe e o formulário público por token. Sempre checar permissão de quem chamou antes.
 - Operações com várias escritas que precisam ser atômicas viram função SQL (`activate_student`, `release_student`, `submit_signup`). `SECURITY INVOKER` + checagem `app.is_admin()` quando é ação do admin; `SECURITY DEFINER` só para o fluxo público, com `grant` apenas para `service_role`.
+- Agenda sem cron: `ensure_sessions(de, até)` cria aulas e presenças "previsto" sob demanda (idempotente) — chame antes de ler aulas (`getSessions` já faz). Vagas pela view `session_occupancy`. Lista da aula só por `session_roster` (mostra nome de aluno de reposição de outro personal, sem dados de saúde). Feriado = linha em `closures` (trigger marca as aulas).
+- Dentro de função `SECURITY DEFINER`, `current_user` é o dono da função: para saber se é o servidor use `auth.jwt() ->> 'role' = 'service_role'`, não `app.is_privileged()`.
 - Tarefas da Central = view `admin_tasks` (derivada, filtrada por `app.is_admin()`). Tarefa nova = novo `union all` na view, nunca tabela de tarefas.
 - Formulário público (`/cadastro/[token]`): sem login; o servidor valida o hash do token e grava com a chave secreta. Validação compartilhada em `src/features/cadastro/schema.ts`.
 - Todo teste novo de permissão vai em `tests/rls/`.
@@ -55,7 +57,7 @@ O seed imprime o link de cadastro do pré-cadastro "Carolina Dias" (para testar 
 - Mobile-first: testar 375, 768 e 1024px. Celular: barra inferior (admin: Tarefas·Agenda·Alunos·Financeiro·Mais; personal: Agora·Agenda·Alunos·Conta). md+: trilho lateral.
 - Tela inicial: admin → `/tarefas`; personal → `/agora`.
 - Alvos de toque ≥ 44px (`h-tap`), ação principal 52px (`h-tap-lg`, `size="lg"`). Ações principais na metade de baixo da tela.
-- Ações reversíveis: aviso curto com **Desfazer** (`toastWithUndo`) e remoção otimista do item. Confirmação só para excluir/cancelar/liberar vaga.
+- Ações reversíveis: aviso curto com **Desfazer** (`toastWithUndo`) e remoção otimista do item. Só um aviso visível por vez (`visibleToasts={1}`): empilhados, cobriam os botões de baixo. Confirmação só para excluir/cancelar/liberar vaga.
 - Ação principal flutuante no celular (ex.: "Novo aluno") fica acima da barra inferior; listas embaixo dela ganham `mb-20 md:mb-0`.
 - `devIndicators: false` no next.config: o indicador do modo dev cobria botões no canto inferior.
 - Estados: skeleton no carregamento, `EmptyState` com orientação e ação, erros em português dizendo o que fazer.
@@ -66,6 +68,11 @@ O seed imprime o link de cadastro do pré-cadastro "Carolina Dias" (para testar 
 - `--brand` #F05B2A (extraído do logo) é para **fundo** de botão/destaque e título grande; texto sobre ele é preto (`--brand-foreground`). Laranja como **texto**: `text-brand-ink` (#B93E12 no claro, #F05B2A no escuro).
 - Títulos: Barlow Condensed bold, caixa alta (`font-display`). Texto: Barlow.
 - Telas sem menu (login, primeiro acesso) usam sempre o tema escuro (`className="dark"`).
+
+## Testes
+- Playwright roda com `reducedMotion: "reduce"` (sem rolagem suave/animações: cliques estáveis e prints nítidos).
+- Testes E2E que mudam dados criam os próprios registros (nome com TAG) e limpam no `afterAll`, ou desfazem o que fizeram.
+- O seed espera o Supabase responder depois do `db reset` (os serviços reiniciam).
 
 ## Ao fim de cada fase
 1. `npm test && npm run test:rls && npm run test:e2e && npm run build`

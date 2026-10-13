@@ -8,11 +8,12 @@ import { toast } from "sonner"
 import { ActionSheet } from "@/components/feedback/action-sheet"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
-import { formatBRL } from "@/lib/format"
+import { formatBRL, summarizeSchedule } from "@/lib/format"
 import type { Enums } from "@/lib/supabase/database.types"
 
-import { regenerateInvite, releaseStudent } from "../actions"
+import { regenerateInvite, releaseStudent, setStudentSchedule } from "../actions"
 import type { ActivationOptions } from "../queries"
+import { SlotPicker } from "./slot-picker"
 import { ActivationSheet, type ActivationTarget } from "./activation-sheet"
 import { InviteReady } from "./pre-registration-form"
 import { ClearanceSheet, FeeSheet } from "./quick-sheets"
@@ -185,6 +186,78 @@ export function StatusActions({ studentId, name, status }: { studentId: string; 
         error={error}
       >
         <p className="text-sm text-muted-foreground">Os horários fixos que ficarem livres podem ser ocupados por outros alunos.</p>
+      </ActionSheet>
+    </>
+  )
+}
+
+/** Horários fixos do aluno ativo (admin pode trocar). */
+export function ScheduleEditor({
+  studentId,
+  name,
+  personalId,
+  frequency,
+  current,
+  options,
+}: {
+  studentId: string
+  name: string
+  personalId: string | null
+  frequency: number | null
+  current: { slot_id: string; weekday: number; start_time: string }[]
+  options: ActivationOptions
+}) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [selected, setSelected] = useState(current.map((c) => c.slot_id))
+  const [error, setError] = useState<string>()
+  const [pending, start] = useTransition()
+  const slots = options.slots.filter((s) => s.personal_id === personalId || current.some((c) => c.slot_id === s.id))
+
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="font-semibold">{summarizeSchedule(current)}</p>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setSelected(current.map((c) => c.slot_id))
+            setError(undefined)
+            setOpen(true)
+          }}
+        >
+          Mudar horários
+        </Button>
+      </div>
+      <ActionSheet
+        open={open}
+        onOpenChange={setOpen}
+        title="Horários fixos"
+        description={`${name}${frequency ? ` · ${frequency}x por semana` : ""}. Vale a partir de hoje.`}
+        submitLabel="Salvar horários"
+        onSubmit={() =>
+          start(async () => {
+            const res = await setStudentSchedule(studentId, selected)
+            if (!res.ok) return setError(res.message)
+            setOpen(false)
+            toast.success("Horários atualizados.")
+            router.refresh()
+          })
+        }
+        pending={pending}
+        error={error}
+      >
+        {slots.length ? (
+          <SlotPicker
+            slots={slots}
+            selected={selected}
+            onChange={setSelected}
+            alreadyMine={current.map((c) => c.slot_id)}
+            frequency={frequency ?? undefined}
+          />
+        ) : (
+          <p className="text-muted-foreground">O personal deste aluno ainda não tem horários. Monte a grade em Configurações → Horários.</p>
+        )}
       </ActionSheet>
     </>
   )

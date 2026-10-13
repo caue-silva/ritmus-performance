@@ -34,6 +34,7 @@
   --destructive: #c0261d; /* 5,6:1 sobre branco */
   --success: #15803d; /* 5,0:1 sobre branco, 4,6:1 sobre --success-soft */
   --success-soft: #dcfce7;
+  --success-foreground: #ffffff;
   --warning: #854d0e; /* 6,8:1 sobre branco, 6,1:1 sobre --warning-soft */
   --warning-soft: #fef3c7;
   --border: #e2e0dc;
@@ -82,6 +83,7 @@
   --destructive: #f87171;
   --success: #4ade80;
   --success-soft: #0f2a18;
+  --success-foreground: #0b0b0b;
   --warning: #facc15;
   --warning-soft: #2a2208;
   --border: #2a2a2a;
@@ -101,6 +103,7 @@
   --color-brand-soft: var(--brand-soft);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
+  --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
 

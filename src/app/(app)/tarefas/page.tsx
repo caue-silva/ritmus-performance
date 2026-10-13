@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 
 import { PageHeader } from "@/components/shell/page-header"
+import { NowCard } from "@/features/agenda/components/now-card"
+import { getNow } from "@/features/agenda/queries"
 import { getActivationOptions } from "@/features/alunos/queries"
 import { TaskBoard } from "@/features/tarefas/components/task-board"
 import { getTasks } from "@/features/tarefas/queries"
@@ -11,7 +13,7 @@ export const metadata: Metadata = { title: "Tarefas" }
 
 export default async function TarefasPage() {
   const staff = await requireAdmin()
-  const [tasks, options] = await Promise.all([getTasks(), getActivationOptions()])
+  const [tasks, options, now] = await Promise.all([getTasks(), getActivationOptions(), getNow(staff.id)])
   return (
     <>
       <PageHeader
@@ -22,6 +24,7 @@ export default async function TarefasPage() {
             : `Oi, ${firstName(staff.full_name)}.`
         }
       />
+      <NowCard now={now} />
       <TaskBoard tasks={tasks} options={options} />
     </>
   )

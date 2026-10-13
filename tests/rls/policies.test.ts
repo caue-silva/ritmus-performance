@@ -102,6 +102,7 @@ afterAll(async () => {
   if (studentIds.length) await svc.from("students").delete().in("id", studentIds)
   if (slotIds.length) {
     await svc.from("class_sessions").delete().in("time_slot_id", slotIds)
+    await svc.from("class_sessions").delete().eq("date", "2031-01-05")
     await svc.from("time_slots").delete().in("id", slotIds)
   }
 })
@@ -317,6 +318,63 @@ describe("agenda, presença e reposição", () => {
   it("só existe um horário ativo por dia e hora", async () => {
     const res = await gabriel.from("time_slots").insert({ weekday: 0, start_time: "05:00", personal_id: brunoId })
     expect(res.error).not.toBeNull()
+  })
+})
+
+describe("agenda: funções da Fase 3", () => {
+  it("lista da aula: só o dono vê; aluno de reposição aparece sem aviso de saúde", async () => {
+    const other = await bruno.rpc("session_roster", { p_session_id: sessionAna })
+    expect(other.error).not.toBeNull()
+
+    const roster = ok(await ana.rpc("session_roster", { p_session_id: sessionAna }))
+    const guest = roster.find((r) => r.student_id === alunoBruno)
+    expect(guest).toBeDefined()
+    expect(guest!.is_mine).toBe(false)
+    expect(guest!.health_flag).toBe(false) // alunoBruno tem "sim" no PAR-Q, mas não é da Ana
+
+    const asAdmin = ok(await gabriel.rpc("session_roster", { p_session_id: sessionAna }))
+    expect(asAdmin.find((r) => r.student_id === alunoBruno)!.health_flag).toBe(true)
+  })
+
+  it("busca para reposição só funciona na própria aula e devolve só nome", async () => {
+    const denied = await bruno.rpc("search_students_for_makeup", { p_session_id: sessionAna, q: "" })
+    expect(denied.error).not.toBeNull()
+    const res = ok(await ana.rpc("search_students_for_makeup", { p_session_id: sessionAna, q: "" }))
+    expect(Object.keys(res[0] ?? { id: 1, full_name: 1, owner_name: 1, is_mine: 1 }).sort()).toEqual(["full_name", "id", "is_mine", "owner_name"])
+  })
+
+  it("geração de aulas: personal só gera as próprias", async () => {
+    const day = "2031-01-05" // domingo, onde só existem os horários de teste
+    ok(await ana.rpc("ensure_sessions", { p_from: day, p_to: day }))
+    const created = ok(await svc.from("class_sessions").select("personal_id").eq("date", day))
+    expect(created.map((c) => c.personal_id)).toEqual([anaId])
+    ok(await gabriel.rpc("ensure_sessions", { p_from: day, p_to: day }))
+    const all = ok(await svc.from("class_sessions").select("personal_id").eq("date", day))
+    expect(all.map((c) => c.personal_id).sort()).toEqual([anaId, brunoId].sort())
+  })
+
+  it("personal cancela a própria aula, mas não a de outro nem marca feriado", async () => {
+    const own = ok(await ana.from("class_sessions").update({ status: "cancelada" }).eq("id", sessionAna).select("id"))
+    expect(own).toHaveLength(1)
+    ok(await ana.from("class_sessions").update({ status: "normal" }).eq("id", sessionAna))
+    const others = ok(await ana.from("class_sessions").update({ status: "cancelada" }).eq("id", sessionBruno).select("id"))
+    expect(others).toHaveLength(0)
+    const holiday = await ana.from("class_sessions").update({ status: "feriado" }).eq("id", sessionAna)
+    expect(holiday.error).not.toBeNull()
+  })
+
+  it("feriados e horários fixos: só o admin muda", async () => {
+    const closure = await ana.from("closures").insert({ date: "2031-02-02", reason: "teste" })
+    expect(closure.error).not.toBeNull()
+    const sched = await ana.rpc("set_student_schedule", { p_student_id: alunoAna, p_slot_ids: [] })
+    expect(sched.error?.message).toMatch(/administrador/)
+    const slot = await ana.from("time_slots").insert({ weekday: 0, start_time: "04:00", personal_id: anaId })
+    expect(slot.error).not.toBeNull()
+  })
+
+  it("ocupação das aulas: personal só vê as próprias", async () => {
+    const rows = ok(await ana.from("session_occupancy").select("personal_id").eq("date", DATE))
+    expect(rows.every((r) => r.personal_id === anaId)).toBe(true)
   })
 })
 

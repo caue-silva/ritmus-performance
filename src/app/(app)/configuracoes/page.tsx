@@ -1,4 +1,6 @@
+import { CalendarClock, ChevronRight } from "lucide-react"
 import type { Metadata } from "next"
+import Link from "next/link"
 
 import { PageHeader } from "@/components/shell/page-header"
 import { InviteMessageForm, LegalDocumentForm, ReferenceFeesForm } from "@/features/configuracoes/components/settings-forms"
@@ -36,6 +38,17 @@ export default async function ConfiguracoesPage() {
   return (
     <div className="mx-auto grid max-w-3xl gap-5">
       <PageHeader title="Configurações" className="mb-1" />
+      <Link
+        href="/configuracoes/horarios"
+        className="flex min-h-16 items-center gap-4 rounded-xl border border-border bg-card p-5 transition-colors hover:border-foreground/30"
+      >
+        <CalendarClock className="size-6 text-brand-ink" aria-hidden />
+        <span className="grid flex-1">
+          <span className="font-display text-xl font-bold uppercase">Horários e feriados</span>
+          <span className="text-sm text-muted-foreground">Funcionamento, quem dá aula em cada horário e dias fechados.</span>
+        </span>
+        <ChevronRight className="size-5 text-muted-foreground" aria-hidden />
+      </Link>
       <Section title="Cadastro de alunos" description="O que o aluno recebe e aceita ao se cadastrar.">
         <InviteMessageForm message={settings?.msg_invite ?? ""} />
       </Section>
@@ -56,7 +69,7 @@ export default async function ConfiguracoesPage() {
           ) : null
         })}
       </Section>
-      <p className="text-center text-sm text-muted-foreground">Pix, mensagens de cobrança e horários de funcionamento chegam nas próximas etapas.</p>
+      <p className="text-center text-sm text-muted-foreground">Pix e mensagens de cobrança chegam na etapa do financeiro.</p>
     </div>
   )
 }

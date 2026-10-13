@@ -7,7 +7,7 @@ import { test, type Page } from "@playwright/test"
 import { generateToken, hashToken } from "../../src/lib/tokens"
 import { login, PASSWORD, service, USERS, VIEWPORTS } from "./support"
 
-const PHASE = process.env.PRINTS_PHASE ?? "fase-2"
+const PHASE = process.env.PRINTS_PHASE ?? "fase-3"
 const TAG = `print${Date.now().toString(36)}`
 
 async function shoot(page: Page, name: string, opts: { dark?: boolean; full?: boolean } = {}) {
@@ -168,4 +168,48 @@ test("personal", async ({ page }) => {
   await shoot(page, "personal-alunos")
   await page.goto(`/alunos/${await studentId("Diego Carvalho")}`)
   await shoot(page, "personal-aluno-ficha")
+})
+
+test("agenda", async ({ page }) => {
+  const db = service()
+  const d = new Date(new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) + "T12:00:00Z")
+  while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d.setUTCDate(d.getUTCDate() - 1)
+  const date = d.toISOString().slice(0, 10)
+  const { data: ana } = await db.from("profiles").select("id").eq("email", USERS.personal).single()
+  const { data: session } = await db
+    .from("class_sessions")
+    .select("id")
+    .eq("personal_id", ana!.id)
+    .eq("date", date)
+    .eq("start_time", "09:00:00")
+    .single()
+
+  await login(page, USERS.personal)
+  await shoot(page, "personal-agora")
+  await page.goto(`/agenda?data=${date}`)
+  await shoot(page, "personal-agenda")
+  await page.goto(`/agenda/aula/${session!.id}`)
+  await shoot(page, "personal-aula")
+  await page.setViewportSize({ width: 375, height: 812 })
+  const list = page.getByRole("list", { name: "Alunos do horário" })
+  await list.getByRole("listitem").first().getByRole("button", { name: /Mais opções/ }).click()
+  await one(page, "personal-aula-opcoes-aluno")
+  await page.keyboard.press("Escape")
+  await page.getByRole("button", { name: /Adicionar reposição|Horário lotado/ }).click()
+  await page.waitForTimeout(500)
+  await one(page, "personal-aula-reposicao")
+  await page.keyboard.press("Escape")
+
+  await page.context().clearCookies()
+  await login(page, USERS.admin)
+  await page.goto(`/agenda?data=${date}`)
+  await shoot(page, "admin-agenda")
+  await page.goto(`/agenda?data=${date}&visao=semana`)
+  await shoot(page, "admin-agenda-semana")
+  await page.goto("/configuracoes/horarios")
+  await shoot(page, "admin-horarios")
+  await page.goto(`/alunos/${await studentId("Mariana Oliveira")}`)
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.getByRole("button", { name: "Mudar horários" }).click()
+  await one(page, "admin-aluno-mudar-horarios")
 })

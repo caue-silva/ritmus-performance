@@ -1,6 +1,7 @@
 "use client"
 
-import { Check, Copy, KeyRound, MessageCircle, Pencil, Plus, Power, RefreshCw } from "lucide-react"
+import { CalendarClock, Check, Copy, KeyRound, MessageCircle, Pencil, Plus, Power, RefreshCw } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
@@ -89,6 +90,11 @@ export function TeamList({ members, suggestedPassword, loginUrl }: { members: Me
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={() => setEditing(m)}>
                 <Pencil aria-hidden /> Editar
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/configuracoes/horarios">
+                  <CalendarClock aria-hidden /> Horários
+                </Link>
               </Button>
               {!m.isMe && (
                 <>

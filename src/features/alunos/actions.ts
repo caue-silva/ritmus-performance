@@ -213,6 +213,18 @@ export async function setMonthlyFee(
   return { ok: true, data: { previousFee: before?.monthly_fee_cents ?? null } }
 }
 
+export async function setStudentSchedule(studentId: string, slotIds: string[]): Promise<ActionResult> {
+  await requireAdmin()
+  if (slotIds.length > 6) return fail("Escolha no máximo 6 horários.")
+  const supabase = await createClient()
+  const { error } = await supabase.rpc("set_student_schedule", { p_student_id: studentId, p_slot_ids: slotIds })
+  if (error) return fail(dbMessage(error, "Não deu para salvar os horários agora."))
+  refresh(studentId)
+  revalidatePath("/agenda", "layout")
+  revalidatePath("/agora")
+  return { ok: true, data: undefined }
+}
+
 export async function releaseStudent(studentId: string, status: "pausado" | "inativo"): Promise<ActionResult> {
   await requireAdmin()
   const supabase = await createClient()

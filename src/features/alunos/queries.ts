@@ -38,7 +38,7 @@ export async function getStudentDetail(id: string, isAdmin: boolean) {
   const { data: student } = await supabase
     .from("students")
     .select(
-      "*, personal:profiles!students_personal_id_fkey(full_name), student_health(*), enrollments(id, starts_on, ends_on, time_slots(weekday, start_time))",
+      "*, personal:profiles!students_personal_id_fkey(full_name), student_health(*), enrollments(id, starts_on, ends_on, time_slot_id, time_slots(weekday, start_time))",
     )
     .eq("id", id)
     .maybeSingle()
@@ -61,7 +61,7 @@ export async function getStudentDetail(id: string, isAdmin: boolean) {
     invite: invite?.data ?? null,
     enrollments: (student.enrollments ?? [])
       .filter((e) => !e.ends_on || e.ends_on > today)
-      .map((e) => ({ id: e.id, weekday: e.time_slots!.weekday, start_time: e.time_slots!.start_time }))
-      .sort((a, b) => a.weekday - b.weekday || a.start_time.localeCompare(b.start_time)),
+      .map((e) => ({ id: e.id, slot_id: e.time_slot_id, weekday: e.time_slots!.weekday, start_time: e.time_slots!.start_time }))
+      .sort((a, b) => ((a.weekday + 6) % 7) - ((b.weekday + 6) % 7) || a.start_time.localeCompare(b.start_time)),
   }
 }

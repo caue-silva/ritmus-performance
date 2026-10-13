@@ -29,11 +29,23 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pt-BR" className={`${body.variable} ${display.variable} h-full`} suppressHydrationWarning>
+    <html
+      lang="pt-BR"
+      className={`${body.variable} ${display.variable} h-full`}
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+    >
       <body className="min-h-full">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
-          <Toaster position="bottom-center" offset={{ bottom: "calc(var(--nav-h) + 1rem)" }} mobileOffset={{ bottom: "calc(var(--nav-h) + env(safe-area-inset-bottom) + 0.75rem)" }} />
+          {/* Um aviso por vez: empilhados, eles cobriam os botões da metade de baixo da tela. */}
+          <Toaster
+            position="bottom-center"
+            visibleToasts={1}
+            duration={3500}
+            offset={{ bottom: "calc(var(--nav-h) + 1rem)" }}
+            mobileOffset={{ bottom: "calc(var(--nav-h) + env(safe-area-inset-bottom) + 0.75rem)" }}
+          />
         </ThemeProvider>
       </body>
     </html>

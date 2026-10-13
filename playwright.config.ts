@@ -14,6 +14,8 @@ export default defineConfig({
     baseURL: "http://localhost:3000",
     locale: "pt-BR",
     timezoneId: "America/Sao_Paulo",
+    // Sem animações nem rolagem suave: cliques estáveis e prints nítidos.
+    reducedMotion: "reduce",
     ...devices["Desktop Chrome"],
   },
   webServer: {

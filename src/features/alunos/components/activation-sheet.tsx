@@ -5,12 +5,12 @@ import { useMemo, useState, useTransition } from "react"
 import { ActionSheet } from "@/components/feedback/action-sheet"
 import { toastWithUndo } from "@/components/feedback/undo-toast"
 import { centsToMoneyInput, ChipToggle, MoneyField, TextField } from "@/components/form/fields"
-import { formatBRL, formatHour, WEEKDAY_SHORT } from "@/lib/format"
-import { cn } from "@/lib/utils"
+import { formatBRL } from "@/lib/format"
 import { parseMoneyToCents } from "@/lib/validation"
 
 import { activateStudent, undoActivation } from "../actions"
 import type { ActivationOptions } from "../queries"
+import { SlotPicker } from "./slot-picker"
 
 export type ActivationTarget = {
   id: string
@@ -48,11 +48,6 @@ export function ActivationSheet({
   const [pending, startTransition] = useTransition()
 
   const slots = useMemo(() => options.slots.filter((s) => s.personal_id === personalId), [options.slots, personalId])
-  const byWeekday = useMemo(() => {
-    const map = new Map<number, typeof slots>()
-    for (const s of slots) map.set(s.weekday, [...(map.get(s.weekday) ?? []), s])
-    return [...map.entries()].sort(([a], [b]) => a - b)
-  }, [slots])
   const suggestion = frequency ? options.referenceFees[String(frequency)] : undefined
 
   const submit = () => {
@@ -134,52 +129,12 @@ export function ActivationSheet({
         <legend className="mb-1 text-sm font-semibold">Horários fixos</legend>
         {!personalId ? (
           <p className="text-sm text-muted-foreground">Escolha o personal para ver os horários dele.</p>
-        ) : byWeekday.length === 0 ? (
+        ) : slots.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Esse personal ainda não tem horários. Dá para ativar agora e escolher os horários depois.
           </p>
         ) : (
-          <>
-            <p className="text-sm text-muted-foreground" aria-live="polite">
-              {slotIds.length} de {frequency || "?"} escolhidos · o número mostra as vagas ocupadas
-            </p>
-            <div className="grid gap-2">
-              {byWeekday.map(([weekday, list]) => (
-                <div key={weekday} className="grid grid-cols-[2.75rem_1fr] items-start gap-2">
-                  <span className="pt-3 text-sm font-bold">{WEEKDAY_SHORT[weekday]}</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {list.map((s) => {
-                      const selected = slotIds.includes(s.id)
-                      const full = s.taken >= s.capacity && !selected
-                      return (
-                        <button
-                          key={s.id}
-                          type="button"
-                          aria-pressed={selected}
-                          disabled={full}
-                          aria-label={`${WEEKDAY_SHORT[weekday]} ${formatHour(s.start_time)}, ${s.taken} de ${s.capacity} vagas ocupadas${full ? ", lotado" : ""}`}
-                          onClick={() =>
-                            setSlotIds((ids) => (selected ? ids.filter((x) => x !== s.id) : [...ids, s.id]))
-                          }
-                          className={cn(
-                            "flex min-h-tap min-w-[4.5rem] flex-col items-center justify-center rounded-lg border px-2 leading-tight transition-colors",
-                            selected
-                              ? "border-foreground bg-foreground text-background"
-                              : full
-                                ? "cursor-not-allowed border-dashed border-border text-muted-foreground opacity-60"
-                                : "border-input bg-card hover:border-foreground/40",
-                          )}
-                        >
-                          <span className="font-semibold">{formatHour(s.start_time)}</span>
-                          <span className="text-xs">{full ? "lotado" : `${s.taken + (selected ? 1 : 0)}/${s.capacity}`}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
+          <SlotPicker slots={slots} selected={slotIds} onChange={setSlotIds} frequency={frequency} />
         )}
       </fieldset>
 

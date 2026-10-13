@@ -5,7 +5,7 @@ import { notFound } from "next/navigation"
 
 import { StudentStatusBadge } from "@/components/feedback/status-badge"
 import { Button } from "@/components/ui/button"
-import { FeeEditor, StatusActions, StudentPrimaryAction } from "@/features/alunos/components/student-actions"
+import { FeeEditor, ScheduleEditor, StatusActions, StudentPrimaryAction } from "@/features/alunos/components/student-actions"
 import { getActivationOptions, getStudentDetail } from "@/features/alunos/queries"
 import { PARQ_QUESTIONS } from "@/features/cadastro/parq"
 import { requireStaff } from "@/lib/auth"
@@ -230,6 +230,23 @@ export default async function AlunoPage({ params }: PageProps<"/alunos/[id]">) {
               <p className="text-muted-foreground">O aluno ainda não respondeu o PAR-Q.</p>
             )}
           </Section>
+
+          {s.status === "ativo" && (
+            <Section title="Horários fixos">
+              {isAdmin && options ? (
+                <ScheduleEditor
+                  studentId={s.id}
+                  name={s.full_name}
+                  personalId={s.personal_id}
+                  frequency={s.weekly_frequency}
+                  current={enrollments}
+                  options={options}
+                />
+              ) : (
+                <p className="font-semibold">{summarizeSchedule(enrollments)}</p>
+              )}
+            </Section>
+          )}
 
           {isAdmin && options && (
             <Section title="Mensalidade">
