@@ -1,26 +1,191 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * TOKENS DE DESIGN — fonte única de cores, raios, alturas de toque e movimento.
+ * Contraste (WCAG):
+ *   --brand #F05B2A (extraído do logo): só como FUNDO de botões/destaques ou título grande.
+ *     texto preto sobre ele 5,8:1 ✔  ·  texto branco 3,4:1 ✘ (por isso --brand-foreground é preto)
+ *   --brand-ink: laranja para TEXTO. Claro: #B93E12 (5,6:1 sobre branco) · Escuro: #F05B2A (5,8:1 sobre preto)
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --brand: #f05b2a;
+  --brand-foreground: #0b0b0b;
+  --brand-ink: #b93e12;
+  --brand-soft: #fdebe4;
+
+  --background: #f6f5f3;
+  --foreground: #0b0b0b;
+  --card: #ffffff;
+  --card-foreground: #0b0b0b;
+  --popover: #ffffff;
+  --popover-foreground: #0b0b0b;
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --secondary: #ecebe8;
+  --secondary-foreground: #0b0b0b;
+  --muted: #ecebe8;
+  --muted-foreground: #57534e; /* 7,0:1 sobre #f6f5f3 */
+  --accent: #ecebe8;
+  --accent-foreground: #0b0b0b;
+  --destructive: #c0261d; /* 5,6:1 sobre branco */
+  --success: #15803d; /* 5,0:1 sobre branco, 4,6:1 sobre --success-soft */
+  --success-soft: #dcfce7;
+  --warning: #854d0e; /* 6,8:1 sobre branco, 6,1:1 sobre --warning-soft */
+  --warning-soft: #fef3c7;
+  --border: #e2e0dc;
+  --input: #d6d3cf;
+  --ring: #0b0b0b;
+
+  --chart-1: var(--brand);
+  --chart-2: #0b0b0b;
+  --chart-3: #78716c;
+  --chart-4: #15803d;
+  --chart-5: #854d0e;
+
+  --sidebar: #0b0b0b;
+  --sidebar-foreground: #f5f5f4;
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-foreground);
+  --sidebar-accent: #1f1f1f;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #262626;
+  --sidebar-ring: var(--brand);
+
+  --radius: 0.75rem;
+  --tap: 2.75rem; /* 44px: alvo mínimo de toque */
+  --tap-lg: 3.25rem; /* 52px: ação principal */
+  --nav-h: 4rem; /* barra inferior */
+  --duration-fast: 120ms;
+  --duration: 180ms;
+}
+
+.dark {
+  --brand-ink: #f05b2a;
+  --brand-soft: #2a160f;
+
+  --background: #0b0b0b;
+  --foreground: #f5f5f4;
+  --card: #161616;
+  --card-foreground: #f5f5f4;
+  --popover: #1c1c1c;
+  --popover-foreground: #f5f5f4;
+  --secondary: #262626;
+  --secondary-foreground: #f5f5f4;
+  --muted: #1f1f1f;
+  --muted-foreground: #a8a29e; /* 7,6:1 sobre #0b0b0b */
+  --accent: #262626;
+  --accent-foreground: #f5f5f4;
+  --destructive: #f87171;
+  --success: #4ade80;
+  --success-soft: #0f2a18;
+  --warning: #facc15;
+  --warning-soft: #2a2208;
+  --border: #2a2a2a;
+  --input: #3a3a3a;
+  --ring: #f5f5f4;
+
+  --chart-2: #f5f5f4;
+
+  --sidebar: #000000;
+  --sidebar-border: #1f1f1f;
 }
 
 @theme inline {
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-display);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --spacing-tap: var(--tap);
+  --spacing-tap-lg: var(--tap-lg);
+  --spacing-nav: var(--nav-h);
+  --default-transition-duration: var(--duration);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  /* Títulos: condensada, bold, caixa alta discreta para o visual esportivo. */
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: 0.01em;
+  }
+  /* Foco sempre visível ao navegar por teclado. */
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* evita zoom automático no iOS */
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
 }

@@ -1,9 +1,8 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
+  // Sem Cache Components: o app é todo autenticado e cada leitura depende do usuário (RLS),
+  // então renderizamos por requisição e usamos loading.tsx (skeletons) para o carregamento.
   turbopack: {
     rules: {
       "*.css": {
@@ -12,6 +11,6 @@ const nextConfig: NextConfig = {
       },
     },
   },
-};
+}
 
-export default nextConfig;
+export default nextConfig

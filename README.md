@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ritmus Performance
 
-## Getting Started
+Sistema de gestão do estúdio Ritmus Performance (Pilar do Sul/SP): alunos, agenda, evolução, financeiro e cobrança. Web app mobile-first, instalável no celular.
 
-First, run the development server:
+## Rodar localmente
+
+Pré-requisitos: Node 20.9+, Docker Desktop aberto e o [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) (`brew install supabase/tap/supabase`).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run db:start              # sobe o Supabase local
+cp .env.example .env.local    # preencha com os valores de `supabase status -o env`
+npm run db:reset              # cria o banco e os dados fictícios
+npm run dev                   # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Contas de teste (só local): `gabriel@ritmus.test` (admin), `ana@ritmus.test` e `bruno@ritmus.test` (personais). A senha está em `scripts/seed.ts`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Testes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm test            # unitários
+npm run test:rls    # permissões no banco (RLS)
+npm run test:e2e    # fluxos no navegador
+npm run prints      # prints das telas em 375/768/1024px (pasta prints/)
+```
 
-## Learn More
+## Trocar o logo
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run logo -- caminho/do/logo-original.png
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Gera `public/logo-ritmus.png`, o favicon e os ícones do app. Nenhum código precisa mudar.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Documentação: `docs/PEDIDO.md` (especificação), `docs/PLANO.md` (plano técnico) e `CLAUDE.md` (convenções).
