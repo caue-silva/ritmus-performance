@@ -8,7 +8,7 @@ Passo a passo para colocar o Ritmus no ar. Faça na ordem. Nenhuma chave secreta
    - **Nome:** ritmus-performance
    - **Região:** South America (São Paulo)
    - Guarde a senha do banco num gerenciador de senhas.
-2. Aplique o banco (migrations) a partir desta pasta:
+2. Aplique o banco (migrations). **Rode dentro da pasta do projeto** (`cd ~/Desktop/Ritmus`): fora dela o `db push` não encontra as migrations e não envia nada.
    ```bash
    npx supabase login
    npx supabase link --project-ref <ref-do-projeto>
