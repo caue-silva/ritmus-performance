@@ -90,6 +90,7 @@ O seed imprime o link de cadastro do pré-cadastro "Carolina Dias" (para testar 
 
 ## Publicação
 Passo a passo em `docs/DEPLOY.md` (Supabase + Vercel + `scripts/create-admin.ts`).
+- Funções da Vercel em São Paulo (`vercel.json`: `regions: ["gru1"]`), mesma região do banco. Cada tela faz várias consultas: servidor longe do banco deixa o app lento.
 
 ## Ao fim de cada fase
 1. `npm test && npm run test:rls && npm run test:e2e && npm run build`

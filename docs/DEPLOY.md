@@ -26,6 +26,7 @@ Passo a passo para colocar o Ritmus no ar. Faça na ordem. Nenhuma chave secreta
 ## 2. Vercel (o app)
 
 1. O projeto **ritmus-performance** já existe na Vercel e está ligado ao repositório: cada `git push` na `main` publica sozinho. (Framework: Next.js. Proteção por login da Vercel só nos deploys de teste, para o endereço principal ficar aberto a personais e alunos.)
+   O servidor do app roda em **São Paulo** (`gru1`, definido em `vercel.json`), perto do banco: não troque a região do Supabase sem trocar esta também.
 2. Em **Settings → Environment Variables**, cadastre para *Production* (e *Preview*, se quiser testar pull requests):
 
    | Variável | Valor |
