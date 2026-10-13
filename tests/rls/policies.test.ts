@@ -407,6 +407,44 @@ describe("evolução: Fase 4", () => {
   })
 })
 
+describe("financeiro: Fase 5", () => {
+  it("personal não gera mensalidades nem enxerga a visão de cobranças", async () => {
+    const gen = await ana.rpc("ensure_monthly_charges")
+    expect(gen.error).not.toBeNull()
+    const rows = ok(await ana.from("charges_view").select("id"))
+    expect(rows).toHaveLength(0)
+  })
+
+  it("1ª mensalidade vence 7 dias após a primeira aula; gerar de novo não duplica", async () => {
+    const today = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" })
+    const monthStart = `${today.slice(0, 7)}-01`
+    const id = await createStudent("Primeira cobrança", anaId)
+    ok(await svc.from("student_billing").insert({ student_id: id, monthly_fee_cents: 25000, due_day: 25 }))
+    // Horário de teste é domingo: 1ª aula = primeiro domingo a partir do dia 1.
+    ok(await svc.from("enrollments").insert({ student_id: id, time_slot_id: slotIds[0]!, starts_on: monthStart }))
+    const d = new Date(`${monthStart}T12:00:00Z`)
+    d.setUTCDate(d.getUTCDate() + ((7 - d.getUTCDay()) % 7) + 7)
+    const expectedDue = d.toISOString().slice(0, 10)
+
+    ok(await gabriel.rpc("ensure_monthly_charges"))
+    const again = ok(await gabriel.rpc("ensure_monthly_charges"))
+    expect(again).toBe(0)
+    const charges = ok(await svc.from("charges").select("due_date, amount_cents, competence").eq("student_id", id))
+    expect(charges).toEqual([{ due_date: expectedDue, amount_cents: 25000, competence: monthStart }])
+  })
+
+  it("aluno pausado ou sem valor não recebe cobrança", async () => {
+    const paused = await createStudent("Pausado sem cobrança", anaId)
+    ok(await svc.from("students").update({ status: "pausado" }).eq("id", paused))
+    ok(await svc.from("student_billing").insert({ student_id: paused, monthly_fee_cents: 20000, due_day: 10 }))
+    const noFee = await createStudent("Sem valor sem cobrança", anaId)
+    ok(await svc.from("student_billing").insert({ student_id: noFee, monthly_fee_cents: null, due_day: 10 }))
+    ok(await gabriel.rpc("ensure_monthly_charges"))
+    const rows = ok(await svc.from("charges").select("id").in("student_id", [paused, noFee]))
+    expect(rows).toHaveLength(0)
+  })
+})
+
 describe("ativação e acesso", () => {
   it("aluno com 'sim' no PAR-Q só é ativado depois da liberação médica", async () => {
     const id = await createStudent("Precisa liberação", brunoId, "aguardando")

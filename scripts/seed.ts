@@ -398,6 +398,76 @@ async function main() {
   for (let i = 0; i < rows.length; i += 200) must(await db.from("measurements").insert(rows.slice(i, i + 200)))
   console.log(`✔ Evolução: ${rows.length} medições semanais`)
 
+  // ---------------------------------------------------------------------------
+  // Financeiro: 2 meses anteriores + mês atual (pela mesma regra do app)
+  // ---------------------------------------------------------------------------
+  const todayISO = today()
+  const todayDay = Number(todayISO.slice(8, 10))
+  // Um aluno vence hoje; o mês atual dos demais segue o dia escolhido.
+  const { data: billed } = await db
+    .from("student_billing")
+    .select("student_id, monthly_fee_cents, due_day, students!inner(full_name, status)")
+    .not("monthly_fee_cents", "is", null)
+    .eq("students.status", "ativo")
+    .order("student_id")
+  const dueToday = billed?.find((b) => (b.students as unknown as { full_name: string }).full_name === "Mariana Oliveira")
+  if (dueToday) must(await db.from("student_billing").update({ due_day: todayDay }).eq("student_id", dueToday.student_id))
+
+  const lastDay = (y: number, m: number) => new Date(Date.UTC(y, m, 0)).getUTCDate()
+  const dueIn = (competence: string, day: number) => {
+    const [y, m] = competence.split("-").map(Number) as [number, number]
+    return `${competence.slice(0, 7)}-${String(Math.min(day, lastDay(y, m))).padStart(2, "0")}`
+  }
+  const monthOf = (iso: string, back: number) => {
+    const [y, m] = iso.split("-").map(Number) as [number, number]
+    const d = new Date(Date.UTC(y, m - 1 - back, 1))
+    return d.toISOString().slice(0, 10)
+  }
+  const overdueNames = ["Thiago Rodrigues", "Bianca Pereira"] // atrasados no mês passado
+  const { data: firstClasses } = await db
+    .from("enrollments")
+    .select("student_id, starts_on, time_slots(weekday)")
+  const firstClass = (studentId: string) =>
+    (firstClasses ?? [])
+      .filter((e) => e.student_id === studentId)
+      .map((e) => addDaysISO(e.starts_on, ((e.time_slots as unknown as { weekday: number }).weekday - new Date(`${e.starts_on}T12:00:00Z`).getUTCDay() + 7) % 7))
+      .sort()[0]
+
+  const chargeRows: TablesInsert<"charges">[] = []
+  for (const b of billed ?? []) {
+    const name = (b.students as unknown as { full_name: string }).full_name
+    const first = firstClass(b.student_id)
+    if (!first) continue
+    for (const back of [2, 1]) {
+      const competence = monthOf(todayISO, back)
+      if (first.slice(0, 7) > competence.slice(0, 7)) continue
+      const due = first.slice(0, 7) === competence.slice(0, 7) ? addDaysISO(first, 7) : dueIn(competence, b.due_day)
+      const overdue = back === 1 && overdueNames.includes(name)
+      chargeRows.push({
+        student_id: b.student_id,
+        competence,
+        amount_cents: b.monthly_fee_cents!,
+        due_date: due,
+        status: overdue ? "pendente" : "pago",
+        paid_on: overdue ? null : addDaysISO(due, Math.floor(random() * 4) - 2),
+        payment_method: overdue ? null : random() < 0.75 ? "pix" : random() < 0.6 ? "dinheiro" : "cartao",
+      })
+    }
+  }
+  must(await db.from("charges").insert(chargeRows))
+  must(await db.rpc("ensure_monthly_charges"))
+  // Mês atual: quem já venceu pagou, menos um (atraso) e quem vence hoje.
+  const { data: current } = await db
+    .from("charges_view")
+    .select("id, full_name, due_date, amount_cents")
+    .eq("competence", monthOf(todayISO, 0))
+  for (const c of current ?? []) {
+    if (c.due_date! < todayISO && c.full_name !== "Lucas Santos") {
+      must(await db.from("charges").update({ status: "pago", paid_on: c.due_date!, payment_method: "pix" }).eq("id", c.id!))
+    }
+  }
+  console.log(`✔ Financeiro: ${chargeRows.length + (current?.length ?? 0)} mensalidades (atrasos: ${overdueNames.join(", ")} e Lucas Santos; vence hoje: Mariana Oliveira)`)
+
   // Pré-cadastro com link enviado (formulário ainda não preenchido)
   const invited = must(
     await db

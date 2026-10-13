@@ -1,8 +1,9 @@
 -- Seed estático (roda no `supabase db reset`). Usuários e dados fictícios: scripts/seed.ts.
 
-insert into public.studio_settings (pix_key, pix_receiver_name, pix_city, msg_invite, msg_due_today, msg_overdue, reference_fees)
+insert into public.studio_settings (pix_key, pix_key_type, pix_receiver_name, pix_city, msg_invite, msg_due_today, msg_overdue, reference_fees)
 values (
   'pix@ritmus.test',
+  'email',
   'RITMUS PERFORMANCE',
   'PILAR DO SUL',
   'Oi, {primeiro_nome}! Que bom ter você no Ritmus 💪 Para finalizar sua matrícula, preencha seu cadastro por este link (vale por 7 dias): {link}',

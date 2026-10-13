@@ -1,5 +1,7 @@
 import "server-only"
 
+import type { ChargeActionTarget } from "@/features/financeiro/components/charge-actions"
+import { getChargesByIds } from "@/features/financeiro/queries"
 import { createClient } from "@/lib/supabase/server"
 
 export type TaskKind = "atrasado" | "vence_hoje" | "liberacao" | "cadastro" | "valor"
@@ -18,6 +20,8 @@ export type Task = {
   weeklyFrequency: number | null
   feeCents: number | null
   dueDay: number | null
+  /** Tarefas de cobrança: dados para "Cobrar no WhatsApp" e "Confirmar pagamento". */
+  charge: ChargeActionTarget | null
 }
 
 export async function getTasks(): Promise<Task[]> {
@@ -31,6 +35,7 @@ export async function getTasks(): Promise<Task[]> {
         supabase.from("student_billing").select("student_id, monthly_fee_cents, due_day").in("student_id", ids),
       ])
     : [{ data: [] }, { data: [] }]
+  const charges = await getChargesByIds((rows ?? []).map((r) => r.charge_id).filter((x): x is string => !!x))
   const sMap = new Map((students.data ?? []).map((s) => [s.id, s]))
   const bMap = new Map((billing.data ?? []).map((b) => [b.student_id, b]))
 
@@ -47,6 +52,7 @@ export async function getTasks(): Promise<Task[]> {
     weeklyFrequency: sMap.get(r.student_id!)?.weekly_frequency ?? null,
     feeCents: bMap.get(r.student_id!)?.monthly_fee_cents ?? null,
     dueDay: bMap.get(r.student_id!)?.due_day ?? null,
+    charge: r.charge_id ? (charges.get(r.charge_id) ?? null) : null,
   }))
 }
 

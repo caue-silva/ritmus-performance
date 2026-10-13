@@ -7,7 +7,7 @@ import { test, type Page } from "@playwright/test"
 import { generateToken, hashToken } from "../../src/lib/tokens"
 import { login, PASSWORD, service, USERS, VIEWPORTS } from "./support"
 
-const PHASE = process.env.PRINTS_PHASE ?? "fase-4"
+const PHASE = process.env.PRINTS_PHASE ?? "fase-5"
 const TAG = `print${Date.now().toString(36)}`
 
 async function shoot(page: Page, name: string, opts: { dark?: boolean; full?: boolean } = {}) {
@@ -261,4 +261,25 @@ test("evolução", async ({ page, context }) => {
   await page.goto(`/alunos/${diego}?aba=evolucao`)
   await shoot(page, "personal-evolucao", { dark: true })
   await page.emulateMedia({ colorScheme: "light" })
+})
+
+test("financeiro", async ({ page }) => {
+  await login(page, USERS.admin)
+  await page.goto("/tarefas")
+  await shoot(page, "admin-tarefas-cobrancas")
+  await page.goto("/financeiro")
+  await shoot(page, "admin-financeiro")
+  await page.setViewportSize({ width: 375, height: 812 })
+  const lucas = page.getByRole("listitem").filter({ hasText: "Lucas Santos" })
+  await lucas.getByRole("button", { name: "Confirmar pagamento" }).click()
+  await one(page, "admin-confirmar-pagamento")
+  await page.keyboard.press("Escape")
+  await lucas.getByRole("link").first().click()
+  await page.getByRole("img", { name: "QR Code do Pix desta mensalidade" }).waitFor()
+  await page.waitForTimeout(400)
+  await shoot(page, "admin-mensalidade")
+  await page.goto("/financeiro/relatorios")
+  await shoot(page, "admin-relatorios")
+  await page.goto("/configuracoes#pix")
+  await shoot(page, "admin-configuracoes-pix", { full: false })
 })

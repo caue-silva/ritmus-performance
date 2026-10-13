@@ -107,6 +107,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "charges"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "charge_events_charge_id_fkey"
+      columns: ["charge_id"]
+isOneToOne: false
+      referencedRelation: "charges_view"
+      referencedColumns: ["id"]
     }
                   ]
                 },"charges": {
@@ -447,14 +453,14 @@ isOneToOne: false
                   ]
                 },"studio_settings": {
                   Row: {
-                    "id": boolean,"msg_due_today": string,"msg_invite": string,"msg_overdue": string,"pix_city": string | null,"pix_key": string | null,"pix_receiver_name": string | null,"reference_fees": NonNullable<Json>,"studio_name": string,"updated_at": string,"updated_by": string | null
+                    "id": boolean,"msg_due_today": string,"msg_invite": string,"msg_overdue": string,"msg_reminder": string,"pix_city": string | null,"pix_key": string | null,"pix_key_type": string | null,"pix_receiver_name": string | null,"reference_fees": NonNullable<Json>,"studio_name": string,"updated_at": string,"updated_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "id"?: boolean,"msg_due_today": string,"msg_invite": string,"msg_overdue": string,"pix_city"?: string | null,"pix_key"?: string | null,"pix_receiver_name"?: string | null,"reference_fees"?: NonNullable<Json>,"studio_name"?: string,"updated_at"?: string,"updated_by"?: string | null
+                    "id"?: boolean,"msg_due_today": string,"msg_invite": string,"msg_overdue": string,"msg_reminder"?: string,"pix_city"?: string | null,"pix_key"?: string | null,"pix_key_type"?: string | null,"pix_receiver_name"?: string | null,"reference_fees"?: NonNullable<Json>,"studio_name"?: string,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Update: {
-                    "id"?: boolean,"msg_due_today"?: string,"msg_invite"?: string,"msg_overdue"?: string,"pix_city"?: string | null,"pix_key"?: string | null,"pix_receiver_name"?: string | null,"reference_fees"?: NonNullable<Json>,"studio_name"?: string,"updated_at"?: string,"updated_by"?: string | null
+                    "id"?: boolean,"msg_due_today"?: string,"msg_invite"?: string,"msg_overdue"?: string,"msg_reminder"?: string,"pix_city"?: string | null,"pix_key"?: string | null,"pix_key_type"?: string | null,"pix_receiver_name"?: string | null,"reference_fees"?: NonNullable<Json>,"studio_name"?: string,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Relationships: [
                     {
@@ -495,6 +501,26 @@ isOneToOne: false
                   ComputedFields: never
                   Relationships: [
                     
+                  ]
+                },"charges_view": {
+                  Row: {
+                    "amount_cents": number | null,"canceled_reason": string | null,"competence": string | null,"confirmed_at": string | null,"confirmed_by": string | null,"created_at": string | null,"days_overdue": number | null,"due_date": string | null,"effective_status": string | null,"full_name": string | null,"id": string | null,"paid_on": string | null,"payment_method": Database["public"]['Enums']["payment_method"] | null,"payment_note": string | null,"status": Database["public"]['Enums']["charge_status"] | null,"student_id": string | null,"updated_at": string | null,"whatsapp": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "charges_confirmed_by_fkey"
+      columns: ["confirmed_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "charges_student_id_fkey"
+      columns: ["student_id"]
+isOneToOne: false
+      referencedRelation: "students"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"current_legal_documents": {
                   Row: {
@@ -549,6 +575,9 @@ isOneToOne: false
           Functions: {
             "activate_student":
 { Args: { "p_due_day": number,"p_fee_cents": number,"p_personal_id": string,"p_slot_ids": (string)[],"p_student_id": string,"p_weekly_frequency": number }; Returns: (string)[]
+                           },
+"ensure_monthly_charges":
+{ Args: Record<PropertyKey, never>; Returns: number
                            },
 "ensure_sessions":
 { Args: { "p_from": string,"p_to": string }; Returns: undefined

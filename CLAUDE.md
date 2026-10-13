@@ -9,7 +9,7 @@ Atualize este arquivo quando uma convenção mudar.
 - Next.js 16 (App Router, Turbopack, `src/proxy.ts` no lugar de middleware) + TypeScript estrito.
 - **Sem Cache Components** (`cacheComponents` desligado): tudo é autenticado e depende do RLS, então as páginas renderizam por requisição; carregamento com `loading.tsx` (skeletons).
 - Tailwind v4 (config no CSS, `src/app/globals.css`) + shadcn/ui (estilo radix-nova, `cn` do pacote `cn`).
-- Supabase (Postgres, Auth, RLS) local via Docker. Recharts (Fase 4). Vitest + Playwright.
+- Supabase (Postgres, Auth, RLS, Storage) local via Docker. Recharts com a prop `responsive` (não usar `ResponsiveContainer`). `qrcode` para o QR do Pix. Vitest + Playwright.
 - npm (não há pnpm).
 
 ## Comandos
@@ -38,6 +38,9 @@ O seed imprime o link de cadastro do pré-cadastro "Carolina Dias" (para testar 
 - Operações com várias escritas que precisam ser atômicas viram função SQL (`activate_student`, `release_student`, `submit_signup`). `SECURITY INVOKER` + checagem `app.is_admin()` quando é ação do admin; `SECURITY DEFINER` só para o fluxo público, com `grant` apenas para `service_role`.
 - Agenda sem cron: `ensure_sessions(de, até)` cria aulas e presenças "previsto" sob demanda (idempotente) — chame antes de ler aulas (`getSessions` já faz). Vagas pela view `session_occupancy`. Lista da aula só por `session_roster` (mostra nome de aluno de reposição de outro personal, sem dados de saúde). Feriado = linha em `closures` (trigger marca as aulas).
 - Dentro de função `SECURITY DEFINER`, `current_user` é o dono da função: para saber se é o servidor use `auth.jwt() ->> 'role' = 'service_role'`, não `app.is_privileged()`.
+- Mensalidades sem cron: `ensure_monthly_charges()` roda no layout quando o admin abre o app (idempotente, `unique (student_id, competence)`). 1ª mensalidade = mês da 1ª aula, vence 7 dias depois dela (`app.first_class_date`); as seguintes no `due_day` do aluno (`app.due_date_in`, dia 31 → último dia). Pausado/inativo/sem valor não gera. "Vencido" é calculado na view `charges_view` (`effective_status`), nunca gravado.
+- Pix: BR Code estático gerado em `src/integrations/payments/pix.ts` (CRC16 testado contra o exemplo do Banco Central); `PaymentProvider` em `src/integrations/payments`. A chave Pix é salva com o tipo (`pix_key_type`), porque CPF e celular têm 11 dígitos. Confirmação de pagamento é sempre manual.
+- Mensagens de cobrança: `msg_reminder` (antes do vencimento), `msg_due_today`, `msg_overdue`, com {primeiro_nome}, {valor}, {vencimento}, {pix}. Escolha em `messageKind()`.
 - Tarefas da Central = view `admin_tasks` (derivada, filtrada por `app.is_admin()`). Tarefa nova = novo `union all` na view, nunca tabela de tarefas.
 - Formulário público (`/cadastro/[token]`): sem login; o servidor valida o hash do token e grava com a chave secreta. Validação compartilhada em `src/features/cadastro/schema.ts`.
 - Fotos da equipe: bucket público `avatars` no Supabase Storage, pasta `<id do perfil>/`; o personal grava só na própria pasta, o admin em qualquer uma. Redimensionar no aparelho antes de enviar. Exames e outros arquivos de aluno continuam fora do sistema.

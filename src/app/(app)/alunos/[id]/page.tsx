@@ -11,9 +11,12 @@ import { PARQ_QUESTIONS } from "@/features/cadastro/parq"
 import { AttendancePanel } from "@/features/evolucao/components/attendance-panel"
 import { EvolutionPanel } from "@/features/evolucao/components/evolution-panel"
 import { getAttendance, getMeasurements } from "@/features/evolucao/queries"
+import { ChargeStatusBadge } from "@/features/financeiro/components/charge-status"
+import { competenceLabel } from "@/features/financeiro/lib"
+import { getStudentCharges } from "@/features/financeiro/queries"
 import { requireStaff } from "@/lib/auth"
 import { addDays, todaySP } from "@/lib/dates"
-import { formatCPF, formatDate, formatPhone, summarizeSchedule } from "@/lib/format"
+import { formatBRL, formatCPF, formatDate, formatPhone, summarizeSchedule } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { ageOn } from "@/lib/validation"
 import { whatsappLink } from "@/lib/whatsapp"
@@ -68,9 +71,10 @@ export default async function AlunoPage({ params, searchParams }: PageProps<"/al
   const hasHistory = s.status === "ativo" || s.status === "pausado" || s.status === "inativo"
   const today = todaySP()
   const canEdit = isAdmin || s.personal_id === staff.id
-  const [points, attendance] = await Promise.all([
+  const [points, attendance, charges] = await Promise.all([
     hasHistory && tab === "evolucao" ? getMeasurements(s.id) : null,
     hasHistory && tab === "presenca" ? getAttendance(s.id, addDays(today, -200)) : null,
+    isAdmin && tab === "resumo" ? getStudentCharges(s.id) : null,
   ])
 
   const yesAnswers = health?.parq_answers.map((a, i) => (a ? i : -1)).filter((i) => i >= 0) ?? []
@@ -308,6 +312,19 @@ export default async function AlunoPage({ params, searchParams }: PageProps<"/al
           {isAdmin && options && (
             <Section title="Mensalidade">
               <FeeEditor target={target} referenceFees={options.referenceFees} />
+              {charges && charges.length > 0 && (
+                <ul className="-mx-1 grid gap-1 border-t border-border pt-3">
+                  {charges.map((c) => (
+                    <li key={c.id}>
+                      <Link href={`/financeiro/${c.id}`} className="flex min-h-tap items-center gap-3 rounded-lg px-1 hover:bg-muted">
+                        <span className="flex-1">{competenceLabel(c.competence)}</span>
+                        <span className="font-semibold tabular-nums">{formatBRL(c.amount_cents)}</span>
+                        <ChargeStatusBadge status={c.effective_status} daysOverdue={c.days_overdue} />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </Section>
           )}
 

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { ActivationSheet } from "@/features/alunos/components/activation-sheet"
 import { ClearanceSheet, FeeSheet } from "@/features/alunos/components/quick-sheets"
 import type { ActivationOptions } from "@/features/alunos/queries"
+import { ChargeActions } from "@/features/financeiro/components/charge-actions"
 import { formatBRL, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -82,6 +83,8 @@ export function TaskBoard({ tasks, options }: { tasks: Task[]; options: Activati
     <TaskCard
       key={t.key}
       task={t}
+      onPaid={() => hide(t.key)}
+      onUnpaid={() => unhide(t.key)}
       onAction={() => {
         if (t.kind === "cadastro" || t.kind === "liberacao" || t.kind === "valor") setSheet({ kind: t.kind, task: t })
         else router.push(`/alunos/${t.studentId}`)
@@ -181,7 +184,7 @@ export function TaskBoard({ tasks, options }: { tasks: Task[]; options: Activati
   )
 }
 
-function TaskCard({ task, onAction }: { task: Task; onAction: () => void }) {
+function TaskCard({ task, onAction, onPaid, onUnpaid }: { task: Task; onAction: () => void; onPaid: () => void; onUnpaid: () => void }) {
   const { icon: Icon, tone, action } = KIND[task.kind]
   return (
     <article className="grid gap-3 rounded-xl border border-border bg-card p-4 shadow-xs">
@@ -196,9 +199,13 @@ function TaskCard({ task, onAction }: { task: Task; onAction: () => void }) {
           <p className="text-sm text-muted-foreground">{reason(task)}</p>
         </div>
       </div>
-      <Button onClick={onAction} className="w-full" variant={task.kind === "cadastro" ? "default" : "dark"}>
-        {action}
-      </Button>
+      {task.charge ? (
+        <ChargeActions charge={task.charge} layout="stack" onConfirmed={onPaid} onUndone={onUnpaid} />
+      ) : (
+        <Button onClick={onAction} className="w-full" variant={task.kind === "cadastro" ? "default" : "dark"}>
+          {action}
+        </Button>
+      )}
     </article>
   )
 }
