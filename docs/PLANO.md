@@ -1,6 +1,6 @@
 # Ritmus Performance — Plano técnico (item 1 do PEDIDO)
 
-> Status: **aprovado** em 12/10/2026, com as respostas da seção 6. Fases 1 a 6 implementadas. Publicação: `docs/DEPLOY.md`.
+> Status: **aprovado** em 12/10/2026, com as respostas da seção 6. Fases 1 a 7 implementadas. Publicação: `docs/DEPLOY.md`.
 
 ---
 
@@ -304,7 +304,7 @@ Outras decisões da Fase 1:
 
 ---
 
-## 8. Fase 7 — Repasses dos professores e campanhas (proposta, aguardando aprovação)
+## 8. Fase 7 — Repasses dos professores e campanhas (aprovada e implementada em 13/10/2026)
 
 Pedido do Gabriel depois da demonstração. Decisões (13/10/2026): comissão sobre o que o aluno **pagou**; o professor vê **só o total do próprio repasse** (sem detalhe por aluno); a comissão fica com o **professor responsável** pelo aluno (reposição não divide); entregar **tudo junto**.
 

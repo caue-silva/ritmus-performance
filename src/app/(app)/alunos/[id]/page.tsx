@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, HeartPulse, MessageCircle, Pencil, Phone, ShieldCheck, UserRound } from "lucide-react"
+import { ArrowLeft, CalendarDays, Gift, HeartPulse, MessageCircle, Pencil, Phone, ShieldCheck, UserRound } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
@@ -14,6 +14,7 @@ import { getAttendance, getMeasurements } from "@/features/evolucao/queries"
 import { ChargeStatusBadge } from "@/features/financeiro/components/charge-status"
 import { competenceLabel } from "@/features/financeiro/lib"
 import { getStudentCharges } from "@/features/financeiro/queries"
+import { ReferralEditor } from "@/features/repasses/components/referral-editor"
 import { requireStaff } from "@/lib/auth"
 import { addDays, todaySP } from "@/lib/dates"
 import { formatBRL, formatCPF, formatDate, formatPhone, summarizeSchedule } from "@/lib/format"
@@ -77,6 +78,8 @@ export default async function AlunoPage({ params, searchParams }: PageProps<"/al
     isAdmin && tab === "resumo" ? getStudentCharges(s.id) : null,
   ])
 
+  const referrers = options?.staff.filter((p) => p.role === "personal") ?? []
+  const referrer = referrers.find((p) => p.id === s.referred_by)
   const yesAnswers = health?.parq_answers.map((a, i) => (a ? i : -1)).filter((i) => i >= 0) ?? []
   const needsClearance = !!health?.requires_clearance && !health.clearance_received_on
   const hasHealthNote = yesAnswers.length > 0 || !!health?.health_notes
@@ -109,6 +112,12 @@ export default async function AlunoPage({ params, searchParams }: PageProps<"/al
                 <li className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-0.5 text-sm font-semibold">
                   <UserRound className="size-4" aria-hidden />
                   <span className="sr-only">Personal:</span> {s.personal.full_name.split(" ")[0]}
+                </li>
+              )}
+              {isAdmin && referrer && (
+                <li className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-0.5 text-sm font-semibold">
+                  <Gift className="size-4" aria-hidden />
+                  Trazido por {referrer.full_name.split(" ")[0]}
                 </li>
               )}
               {s.status === "ativo" && (
@@ -196,6 +205,7 @@ export default async function AlunoPage({ params, searchParams }: PageProps<"/al
               ? `O link de cadastro foi enviado e vale até ${formatDate(detail.invite.expires_at)}. Assim que ${s.full_name.split(" ")[0]} preencher, aparece uma tarefa para você.`
               : "O link de cadastro expirou. Gere um novo link e mande pelo WhatsApp."}
           </p>
+          {isAdmin && <ReferralEditor studentId={s.id} value={s.referred_by} people={referrers} />}
         </Section>
       ) : (
         <div className="grid gap-5 lg:grid-cols-2">
@@ -312,6 +322,7 @@ export default async function AlunoPage({ params, searchParams }: PageProps<"/al
           {isAdmin && options && (
             <Section title="Mensalidade">
               <FeeEditor target={target} referenceFees={options.referenceFees} />
+              <ReferralEditor studentId={s.id} value={s.referred_by} people={referrers} />
               {charges && charges.length > 0 && (
                 <ul className="-mx-1 grid gap-1 border-t border-border pt-3">
                   {charges.map((c) => (

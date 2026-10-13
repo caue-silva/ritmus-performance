@@ -1,6 +1,6 @@
 "use client"
 
-import { CalendarClock, Check, Copy, KeyRound, MessageCircle, Pencil, Plus, Power, RefreshCw } from "lucide-react"
+import { Award, CalendarClock, Check, Copy, KeyRound, MessageCircle, Pencil, Percent, Plus, Power, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
@@ -8,12 +8,15 @@ import { toast } from "sonner"
 
 import { ActionSheet } from "@/components/feedback/action-sheet"
 import { toastWithUndo } from "@/components/feedback/undo-toast"
-import { TextField } from "@/components/form/fields"
+import { CheckRow, TextField } from "@/components/form/fields"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
-import { firstName, formatPhone } from "@/lib/format"
+import { competenceLabel } from "@/features/financeiro/lib"
+import { setCommissionRate, setJoinsRanking } from "@/features/repasses/actions"
+import { todaySP } from "@/lib/dates"
+import { firstName, formatDate, formatPhone } from "@/lib/format"
 import { cn } from "@/lib/utils"
-import { maskPhone } from "@/lib/validation"
+import { maskDate, maskPhone } from "@/lib/validation"
 import { whatsappLink } from "@/lib/whatsapp"
 
 import { createStaff, resetStaffPassword, setStaffActive, suggestTempPassword, updateStaff } from "../actions"
@@ -31,6 +34,10 @@ export type Member = {
   isMe: boolean
   activeStudents: number
   schedule: string
+  commission: { rate_bp: number; valid_from: string | null; next?: { rate_bp: number; valid_from: string } }
+  joinsRanking: boolean
+  /** Meses em que foi "professor do mês" (yyyy-mm-01). */
+  awards: string[]
 }
 
 type Credentials = { name: string; email: string; password: string; whatsapp: string | null; isNew: boolean }
@@ -40,6 +47,7 @@ export function TeamList({ members, suggestedPassword, loginUrl }: { members: Me
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<Member | null>(null)
   const [resetting, setResetting] = useState<Member | null>(null)
+  const [commission, setCommission] = useState<Member | null>(null)
   const [credentials, setCredentials] = useState<Credentials | null>(null)
   const [, start] = useTransition()
 
@@ -76,6 +84,14 @@ export function TeamList({ members, suggestedPassword, loginUrl }: { members: Me
               {m.active && m.must_change_password && (
                 <span className="rounded-full bg-warning-soft px-3 py-1 font-semibold text-warning">Ainda não criou a senha</span>
               )}
+              {m.awards.length > 0 && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full bg-brand px-3 py-1 font-semibold text-brand-foreground"
+                  title={m.awards.map(competenceLabel).join(", ")}
+                >
+                  <Award className="size-4" aria-hidden /> Professor do mês{m.awards.length > 1 ? ` ×${m.awards.length}` : ""}
+                </span>
+              )}
             </div>
             <dl className="grid gap-2 text-sm">
               <div className="grid grid-cols-[6.5rem_1fr] gap-2">
@@ -86,10 +102,30 @@ export function TeamList({ members, suggestedPassword, loginUrl }: { members: Me
                 <dt className="text-muted-foreground">Horários</dt>
                 <dd className="font-semibold">{m.schedule}</dd>
               </div>
+              {m.role === "personal" && (
+                <div className="grid grid-cols-[6.5rem_1fr] gap-2">
+                  <dt className="text-muted-foreground">Comissão</dt>
+                  <dd>
+                    <span className="font-semibold">{m.commission.valid_from ? `${m.commission.rate_bp / 100}% da mensalidade` : "Não definida"}</span>
+                    {m.commission.next && (
+                      <span className="block text-muted-foreground">
+                        {m.commission.next.rate_bp / 100}% a partir de {formatDate(m.commission.next.valid_from)}
+                      </span>
+                    )}
+                  </dd>
+                </div>
+              )}
+              <div className="grid grid-cols-[6.5rem_1fr] gap-2">
+                <dt className="text-muted-foreground">Ranking</dt>
+                <dd className="font-semibold">{m.joinsRanking ? "Participa" : "Não participa"}</dd>
+              </div>
             </dl>
             <div className="mt-auto flex flex-wrap gap-2 border-t border-border pt-4">
               <Button variant="outline" size="sm" onClick={() => setEditing(m)}>
                 <Pencil aria-hidden /> Editar
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setCommission(m)}>
+                <Percent aria-hidden /> {m.role === "personal" ? "Comissão e ranking" : "Ranking"}
               </Button>
               <Button asChild variant="outline" size="sm">
                 <Link href="/configuracoes/horarios">
@@ -126,6 +162,7 @@ export function TeamList({ members, suggestedPassword, loginUrl }: { members: Me
           }}
         />
       )}
+      {commission && <CommissionSheet member={commission} onClose={() => setCommission(null)} onSaved={() => router.refresh()} />}
       {editing && <EditStaffSheet member={editing} onClose={() => setEditing(null)} onSaved={() => router.refresh()} />}
       {resetting && (
         <ResetSheet
@@ -239,6 +276,77 @@ function EditStaffSheet({ member, onClose, onSaved }: { member: Member; onClose:
         mask={maskPhone}
         inputMode="tel"
       />
+    </ActionSheet>
+  )
+}
+
+function CommissionSheet({ member, onClose, onSaved }: { member: Member; onClose: () => void; onSaved: () => void }) {
+  const isPersonal = member.role === "personal"
+  const [percent, setPercent] = useState(String((member.commission.next ?? member.commission).rate_bp / 100 || (isPersonal ? 65 : 0)).replace(".", ","))
+  const [validFrom, setValidFrom] = useState(formatDate(`${todaySP().slice(0, 7)}-01`))
+  const [joins, setJoins] = useState(member.joinsRanking)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [pending, start] = useTransition()
+  const submit = () =>
+    start(async () => {
+      if (isPersonal) {
+        const value = Number(percent.replace(",", "."))
+        const changed = !member.commission.valid_from || value * 100 !== member.commission.rate_bp || member.commission.next
+        if (changed) {
+          const res = await setCommissionRate(member.id, value, validFrom)
+          if (!res.ok) return setErrors(res.fieldErrors ?? { percent: res.message })
+        }
+      }
+      if (joins !== member.joinsRanking) {
+        const res = await setJoinsRanking(member.id, joins)
+        if (!res.ok) return setErrors({ joins: res.message })
+      }
+      toast.success("Salvo.")
+      onSaved()
+      onClose()
+    })
+  return (
+    <ActionSheet
+      open
+      onOpenChange={(o) => !o && onClose()}
+      title={isPersonal ? "Comissão e ranking" : "Ranking"}
+      description={member.full_name}
+      submitLabel="Salvar"
+      onSubmit={submit}
+      pending={pending}
+    >
+      {isPersonal && (
+        <>
+          <TextField
+            id="percent"
+            label="Comissão (% da mensalidade paga)"
+            value={percent}
+            onChange={(x) => {
+              setPercent(x.replace(/[^\d,]/g, ""))
+              setErrors({})
+            }}
+            error={errors.percent}
+            inputMode="decimal"
+            className="[&_input]:max-w-28"
+          />
+          <TextField
+            id="valid_from"
+            label="Vale para pagamentos a partir de"
+            value={validFrom}
+            onChange={setValidFrom}
+            error={errors.validFrom}
+            mask={maskDate}
+            inputMode="numeric"
+            className="[&_input]:max-w-40"
+          />
+          <p className="text-sm text-muted-foreground">
+            O professor recebe essa parte do que os próprios alunos pagaram. Pagamentos de antes da data continuam com o percentual antigo.
+          </p>
+        </>
+      )}
+      <CheckRow id="joins_ranking" checked={joins} onChange={setJoins} error={errors.joins}>
+        Participa do ranking “professor do mês”
+      </CheckRow>
     </ActionSheet>
   )
 }

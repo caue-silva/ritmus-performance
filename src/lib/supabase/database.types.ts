@@ -83,6 +83,26 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"campaigns": {
+                  Row: {
+                    "body": string | null,"created_at": string,"created_by": string | null,"ends_on": string,"id": string,"image_url": string | null,"link_url": string | null,"referral_bonus": boolean,"starts_on": string,"title": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "body"?: string | null,"created_at"?: string,"created_by"?: string | null,"ends_on": string,"id"?: string,"image_url"?: string | null,"link_url"?: string | null,"referral_bonus"?: boolean,"starts_on": string,"title": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "body"?: string | null,"created_at"?: string,"created_by"?: string | null,"ends_on"?: string,"id"?: string,"image_url"?: string | null,"link_url"?: string | null,"referral_bonus"?: boolean,"starts_on"?: string,"title"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "campaigns_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"charge_events": {
                   Row: {
                     "action": string,"actor_id": string | null,"at": string,"charge_id": string,"id": number,"new_value": Json | null,"old_value": Json | null
@@ -117,19 +137,25 @@ isOneToOne: false
                   ]
                 },"charges": {
                   Row: {
-                    "amount_cents": number,"canceled_reason": string | null,"competence": string,"confirmed_at": string | null,"confirmed_by": string | null,"created_at": string,"due_date": string,"id": string,"paid_on": string | null,"payment_method": Database["public"]['Enums']["payment_method"] | null,"payment_note": string | null,"status": Database["public"]['Enums']["charge_status"],"student_id": string,"updated_at": string
+                    "amount_cents": number,"canceled_reason": string | null,"competence": string,"confirmed_at": string | null,"confirmed_by": string | null,"created_at": string,"due_date": string,"id": string,"paid_on": string | null,"payment_method": Database["public"]['Enums']["payment_method"] | null,"payment_note": string | null,"personal_id": string | null,"status": Database["public"]['Enums']["charge_status"],"student_id": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount_cents": number,"canceled_reason"?: string | null,"competence": string,"confirmed_at"?: string | null,"confirmed_by"?: string | null,"created_at"?: string,"due_date": string,"id"?: string,"paid_on"?: string | null,"payment_method"?: Database["public"]['Enums']["payment_method"] | null,"payment_note"?: string | null,"status"?: Database["public"]['Enums']["charge_status"],"student_id": string,"updated_at"?: string
+                    "amount_cents": number,"canceled_reason"?: string | null,"competence": string,"confirmed_at"?: string | null,"confirmed_by"?: string | null,"created_at"?: string,"due_date": string,"id"?: string,"paid_on"?: string | null,"payment_method"?: Database["public"]['Enums']["payment_method"] | null,"payment_note"?: string | null,"personal_id"?: string | null,"status"?: Database["public"]['Enums']["charge_status"],"student_id": string,"updated_at"?: string
                   }
                   Update: {
-                    "amount_cents"?: number,"canceled_reason"?: string | null,"competence"?: string,"confirmed_at"?: string | null,"confirmed_by"?: string | null,"created_at"?: string,"due_date"?: string,"id"?: string,"paid_on"?: string | null,"payment_method"?: Database["public"]['Enums']["payment_method"] | null,"payment_note"?: string | null,"status"?: Database["public"]['Enums']["charge_status"],"student_id"?: string,"updated_at"?: string
+                    "amount_cents"?: number,"canceled_reason"?: string | null,"competence"?: string,"confirmed_at"?: string | null,"confirmed_by"?: string | null,"created_at"?: string,"due_date"?: string,"id"?: string,"paid_on"?: string | null,"payment_method"?: Database["public"]['Enums']["payment_method"] | null,"payment_note"?: string | null,"personal_id"?: string | null,"status"?: Database["public"]['Enums']["charge_status"],"student_id"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
       foreignKeyName: "charges_confirmed_by_fkey"
       columns: ["confirmed_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "charges_personal_id_fkey"
+      columns: ["personal_id"]
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
@@ -329,17 +355,89 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "active": boolean,"avatar_url": string | null,"created_at": string,"email": string,"full_name": string,"id": string,"must_change_password": boolean,"role": Database["public"]['Enums']["staff_role"],"updated_at": string,"whatsapp": string | null
+                    "active": boolean,"avatar_url": string | null,"created_at": string,"email": string,"full_name": string,"id": string,"joins_ranking": boolean | null,"must_change_password": boolean,"role": Database["public"]['Enums']["staff_role"],"updated_at": string,"whatsapp": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "active"?: boolean,"avatar_url"?: string | null,"created_at"?: string,"email": string,"full_name": string,"id": string,"must_change_password"?: boolean,"role"?: Database["public"]['Enums']["staff_role"],"updated_at"?: string,"whatsapp"?: string | null
+                    "active"?: boolean,"avatar_url"?: string | null,"created_at"?: string,"email": string,"full_name": string,"id": string,"joins_ranking"?: boolean | null,"must_change_password"?: boolean,"role"?: Database["public"]['Enums']["staff_role"],"updated_at"?: string,"whatsapp"?: string | null
                   }
                   Update: {
-                    "active"?: boolean,"avatar_url"?: string | null,"created_at"?: string,"email"?: string,"full_name"?: string,"id"?: string,"must_change_password"?: boolean,"role"?: Database["public"]['Enums']["staff_role"],"updated_at"?: string,"whatsapp"?: string | null
+                    "active"?: boolean,"avatar_url"?: string | null,"created_at"?: string,"email"?: string,"full_name"?: string,"id"?: string,"joins_ranking"?: boolean | null,"must_change_password"?: boolean,"role"?: Database["public"]['Enums']["staff_role"],"updated_at"?: string,"whatsapp"?: string | null
                   }
                   Relationships: [
                     
+                  ]
+                },"staff_awards": {
+                  Row: {
+                    "checkins": number,"classes": number,"created_at": string,"id": string,"kind": string,"month": string,"personal_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "checkins": number,"classes": number,"created_at"?: string,"id"?: string,"kind"?: string,"month": string,"personal_id": string
+                  }
+                  Update: {
+                    "checkins"?: number,"classes"?: number,"created_at"?: string,"id"?: string,"kind"?: string,"month"?: string,"personal_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "staff_awards_personal_id_fkey"
+      columns: ["personal_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"staff_commission_rates": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"id": string,"personal_id": string,"rate_bp": number,"valid_from": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"personal_id": string,"rate_bp": number,"valid_from": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"personal_id"?: string,"rate_bp"?: number,"valid_from"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "staff_commission_rates_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_commission_rates_personal_id_fkey"
+      columns: ["personal_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"staff_payouts": {
+                  Row: {
+                    "amount_cents": number,"created_at": string,"created_by": string | null,"id": string,"month": string,"note": string | null,"paid_on": string,"payment_method": Database["public"]['Enums']["payment_method"],"personal_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount_cents": number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"month": string,"note"?: string | null,"paid_on": string,"payment_method": Database["public"]['Enums']["payment_method"],"personal_id": string
+                  }
+                  Update: {
+                    "amount_cents"?: number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"month"?: string,"note"?: string | null,"paid_on"?: string,"payment_method"?: Database["public"]['Enums']["payment_method"],"personal_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "staff_payouts_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_payouts_personal_id_fkey"
+      columns: ["personal_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"student_billing": {
                   Row: {
@@ -421,14 +519,14 @@ isOneToOne: false
                   ]
                 },"students": {
                   Row: {
-                    "activated_at": string | null,"activated_by": string | null,"anonymized_at": string | null,"birth_date": string | null,"cep": string | null,"city": string | null,"complement": string | null,"cpf": string | null,"created_at": string,"created_by": string | null,"email": string | null,"emergency_name": string | null,"emergency_phone": string | null,"emergency_relation": string | null,"full_name": string,"goals": (string)[],"goals_notes": string | null,"height_cm": number | null,"id": string,"neighborhood": string | null,"number": string | null,"personal_id": string | null,"state": string | null,"status": Database["public"]['Enums']["student_status"],"status_changed_at": string,"street": string | null,"submitted_at": string | null,"updated_at": string,"weekly_frequency": number | null,"whatsapp": string
+                    "activated_at": string | null,"activated_by": string | null,"anonymized_at": string | null,"birth_date": string | null,"cep": string | null,"city": string | null,"complement": string | null,"cpf": string | null,"created_at": string,"created_by": string | null,"email": string | null,"emergency_name": string | null,"emergency_phone": string | null,"emergency_relation": string | null,"full_name": string,"goals": (string)[],"goals_notes": string | null,"height_cm": number | null,"id": string,"neighborhood": string | null,"number": string | null,"personal_id": string | null,"referred_by": string | null,"state": string | null,"status": Database["public"]['Enums']["student_status"],"status_changed_at": string,"street": string | null,"submitted_at": string | null,"updated_at": string,"weekly_frequency": number | null,"whatsapp": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "activated_at"?: string | null,"activated_by"?: string | null,"anonymized_at"?: string | null,"birth_date"?: string | null,"cep"?: string | null,"city"?: string | null,"complement"?: string | null,"cpf"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"emergency_name"?: string | null,"emergency_phone"?: string | null,"emergency_relation"?: string | null,"full_name": string,"goals"?: (string)[],"goals_notes"?: string | null,"height_cm"?: number | null,"id"?: string,"neighborhood"?: string | null,"number"?: string | null,"personal_id"?: string | null,"state"?: string | null,"status"?: Database["public"]['Enums']["student_status"],"status_changed_at"?: string,"street"?: string | null,"submitted_at"?: string | null,"updated_at"?: string,"weekly_frequency"?: number | null,"whatsapp": string
+                    "activated_at"?: string | null,"activated_by"?: string | null,"anonymized_at"?: string | null,"birth_date"?: string | null,"cep"?: string | null,"city"?: string | null,"complement"?: string | null,"cpf"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"emergency_name"?: string | null,"emergency_phone"?: string | null,"emergency_relation"?: string | null,"full_name": string,"goals"?: (string)[],"goals_notes"?: string | null,"height_cm"?: number | null,"id"?: string,"neighborhood"?: string | null,"number"?: string | null,"personal_id"?: string | null,"referred_by"?: string | null,"state"?: string | null,"status"?: Database["public"]['Enums']["student_status"],"status_changed_at"?: string,"street"?: string | null,"submitted_at"?: string | null,"updated_at"?: string,"weekly_frequency"?: number | null,"whatsapp": string
                   }
                   Update: {
-                    "activated_at"?: string | null,"activated_by"?: string | null,"anonymized_at"?: string | null,"birth_date"?: string | null,"cep"?: string | null,"city"?: string | null,"complement"?: string | null,"cpf"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"emergency_name"?: string | null,"emergency_phone"?: string | null,"emergency_relation"?: string | null,"full_name"?: string,"goals"?: (string)[],"goals_notes"?: string | null,"height_cm"?: number | null,"id"?: string,"neighborhood"?: string | null,"number"?: string | null,"personal_id"?: string | null,"state"?: string | null,"status"?: Database["public"]['Enums']["student_status"],"status_changed_at"?: string,"street"?: string | null,"submitted_at"?: string | null,"updated_at"?: string,"weekly_frequency"?: number | null,"whatsapp"?: string
+                    "activated_at"?: string | null,"activated_by"?: string | null,"anonymized_at"?: string | null,"birth_date"?: string | null,"cep"?: string | null,"city"?: string | null,"complement"?: string | null,"cpf"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"emergency_name"?: string | null,"emergency_phone"?: string | null,"emergency_relation"?: string | null,"full_name"?: string,"goals"?: (string)[],"goals_notes"?: string | null,"height_cm"?: number | null,"id"?: string,"neighborhood"?: string | null,"number"?: string | null,"personal_id"?: string | null,"referred_by"?: string | null,"state"?: string | null,"status"?: Database["public"]['Enums']["student_status"],"status_changed_at"?: string,"street"?: string | null,"submitted_at"?: string | null,"updated_at"?: string,"weekly_frequency"?: number | null,"whatsapp"?: string
                   }
                   Relationships: [
                     {
@@ -446,6 +544,12 @@ isOneToOne: false
     },{
       foreignKeyName: "students_personal_id_fkey"
       columns: ["personal_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "students_referred_by_fkey"
+      columns: ["referred_by"]
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
@@ -504,13 +608,19 @@ isOneToOne: false
                   ]
                 },"charges_view": {
                   Row: {
-                    "amount_cents": number | null,"canceled_reason": string | null,"competence": string | null,"confirmed_at": string | null,"confirmed_by": string | null,"created_at": string | null,"days_overdue": number | null,"due_date": string | null,"effective_status": string | null,"full_name": string | null,"id": string | null,"paid_on": string | null,"payment_method": Database["public"]['Enums']["payment_method"] | null,"payment_note": string | null,"status": Database["public"]['Enums']["charge_status"] | null,"student_id": string | null,"updated_at": string | null,"whatsapp": string | null
+                    "amount_cents": number | null,"canceled_reason": string | null,"competence": string | null,"confirmed_at": string | null,"confirmed_by": string | null,"created_at": string | null,"days_overdue": number | null,"due_date": string | null,"effective_status": string | null,"full_name": string | null,"id": string | null,"paid_on": string | null,"payment_method": Database["public"]['Enums']["payment_method"] | null,"payment_note": string | null,"personal_id": string | null,"status": Database["public"]['Enums']["charge_status"] | null,"student_id": string | null,"updated_at": string | null,"whatsapp": string | null
                   }
                   ComputedFields: never
                   Relationships: [
                     {
       foreignKeyName: "charges_confirmed_by_fkey"
       columns: ["confirmed_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "charges_personal_id_fkey"
+      columns: ["personal_id"]
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
@@ -579,6 +689,9 @@ isOneToOne: false
 "anonymize_student":
 { Args: { "p_student_id": string }; Returns: undefined
                            },
+"ensure_monthly_awards":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
 "ensure_monthly_charges":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
@@ -588,6 +701,21 @@ isOneToOne: false
 "last_measurement":
 { Args: { "p_session_id"?: string,"p_student_id": string }; Returns: {
               "abdomen_cm": number,"height_cm": number,"measured_at": string,"waist_cm": number,"weight_kg": number
+            }[]
+                           },
+"my_payout":
+{ Args: { "p_month": string }; Returns: {
+              "bonus_cents": number,"paid_amount_cents": number,"paid_on": string,"total_cents": number
+            }[]
+                           },
+"payout_details":
+{ Args: { "p_month": string,"p_personal_id": string }; Returns: {
+              "amount_cents": number,"bonus_cents": number,"charge_id": string,"commission_cents": number,"paid_on": string,"rate_bp": number,"student_id": string,"student_name": string
+            }[]
+                           },
+"payout_report":
+{ Args: { "p_month": string }; Returns: {
+              "avatar_url": string,"base_cents": number,"bonus_cents": number,"charges_count": number,"commission_cents": number,"current_rate_bp": number,"full_name": string,"paid_amount_cents": number,"paid_on": string,"payment_method": Database["public"]['Enums']["payment_method"],"payout_note": string,"personal_id": string,"total_cents": number
             }[]
                            },
 "release_student":
@@ -613,6 +741,11 @@ isOneToOne: false
                            },
 "submit_signup":
 { Args: { "p_data": Json,"p_doc_ids": (string)[],"p_ip": unknown,"p_token_hash": string,"p_user_agent": string }; Returns: string
+                           },
+"teaching_ranking":
+{ Args: { "p_month": string }; Returns: {
+              "avatar_url": string,"checkins": number,"classes": number,"full_name": string,"personal_id": string,"rank_position": number
+            }[]
                            }
           }
           Enums: {

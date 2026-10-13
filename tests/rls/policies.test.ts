@@ -477,6 +477,78 @@ describe("LGPD: Fase 6", () => {
   })
 })
 
+describe("repasses e campanhas: Fase 7", () => {
+  it("personal não lê comissões nem repasses de ninguém, nem o relatório do admin", async () => {
+    for (const table of ["staff_commission_rates", "staff_payouts"] as const) {
+      expect(ok(await ana.from(table).select("*"))).toHaveLength(0)
+    }
+    const report = await ana.rpc("payout_report", { p_month: "2030-03-01" })
+    expect(report.error?.message).toMatch(/administrador/)
+    const details = await ana.rpc("payout_details", { p_month: "2030-03-01", p_personal_id: anaId })
+    expect(details.error?.message).toMatch(/administrador/)
+  })
+
+  it("personal vê só o próprio total (sem detalhe por aluno)", async () => {
+    const mine = ok(await ana.rpc("my_payout", { p_month: "2030-03-01" }))
+    expect(Object.keys(mine[0]!).sort()).toEqual(["bonus_cents", "paid_amount_cents", "paid_on", "total_cents"])
+  })
+
+  it("bônus de indicação: 1ª mensalidade 100% para quem trouxe; depois comissão normal do professor", async () => {
+    const id = await createStudent("Indicada Repasse", brunoId)
+    ok(await svc.from("students").update({ referred_by: anaId, activated_at: "2030-03-05T12:00:00Z" }).eq("id", id))
+    const camp = ok(
+      await svc
+        .from("campaigns")
+        .insert({ title: `Teste ${TAG}`, starts_on: "2030-03-01", ends_on: "2030-03-31", referral_bonus: true })
+        .select("id")
+        .single(),
+    )
+    ok(
+      await svc.from("charges").insert([
+        { student_id: id, competence: "2030-03-01", amount_cents: 30000, due_date: "2030-03-12", status: "pago", paid_on: "2030-03-10", payment_method: "pix" },
+        { student_id: id, competence: "2030-04-01", amount_cents: 30000, due_date: "2030-04-10", status: "pago", paid_on: "2030-04-10", payment_method: "pix" },
+      ]),
+    )
+    // A mensalidade guarda o professor do aluno no momento em que foi criada.
+    const snap = ok(await svc.from("charges").select("personal_id").eq("student_id", id))
+    expect(snap.every((c) => c.personal_id === brunoId)).toBe(true)
+
+    const march = ok(await gabriel.rpc("payout_details", { p_month: "2030-03-01", p_personal_id: anaId }))
+    expect(march.filter((l) => l.student_id === id)).toEqual([expect.objectContaining({ bonus_cents: 30000, commission_cents: 0 })])
+    const marchBruno = ok(await gabriel.rpc("payout_details", { p_month: "2030-03-01", p_personal_id: brunoId }))
+    expect(marchBruno.filter((l) => l.student_id === id)).toHaveLength(0)
+
+    const april = ok(await gabriel.rpc("payout_details", { p_month: "2030-04-01", p_personal_id: brunoId }))
+    expect(april.filter((l) => l.student_id === id)).toEqual([expect.objectContaining({ bonus_cents: 0, commission_cents: 19500 })])
+
+    // A Ana enxerga o bônus só no total dela.
+    const mine = ok(await ana.rpc("my_payout", { p_month: "2030-03-01" }))
+    expect(mine[0]!.bonus_cents).toBeGreaterThanOrEqual(30000)
+    await svc.from("campaigns").delete().eq("id", camp.id)
+  })
+
+  it("só o admin define quem trouxe o aluno e quem participa do ranking", async () => {
+    const ref = await ana.from("students").update({ referred_by: anaId }).eq("id", alunoAna)
+    expect(ref.error).not.toBeNull()
+    const rank = await ana.from("profiles").update({ joins_ranking: false }).eq("id", anaId)
+    expect(rank.error).not.toBeNull()
+  })
+
+  it("campanhas: equipe lê; só admin cria e envia arte", async () => {
+    ok(await ana.from("campaigns").select("id"))
+    const ins = await ana.from("campaigns").insert({ title: "x", starts_on: "2030-01-01", ends_on: "2030-01-02" })
+    expect(ins.error).not.toBeNull()
+    const file = new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], { type: "image/jpeg" })
+    const up = await ana.storage.from("campaigns").upload(`${TAG}.jpg`, file, { contentType: "image/jpeg" })
+    expect(up.error).not.toBeNull()
+  })
+
+  it("ranking: equipe vê só aulas e check-ins (nada financeiro)", async () => {
+    const rows = ok(await ana.rpc("teaching_ranking", { p_month: "2030-01-01" }))
+    for (const r of rows) expect(Object.keys(r).sort()).toEqual(["avatar_url", "checkins", "classes", "full_name", "personal_id", "rank_position"])
+  })
+})
+
 describe("ativação e acesso", () => {
   it("aluno com 'sim' no PAR-Q só é ativado depois da liberação médica", async () => {
     const id = await createStudent("Precisa liberação", brunoId, "aguardando")

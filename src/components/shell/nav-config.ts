@@ -2,11 +2,12 @@ import {
   CalendarDays,
   CircleUser,
   ClipboardCheck,
-
   LineChart,
+  Megaphone,
   Menu,
   Settings,
   Timer,
+  Trophy,
   Users,
   UsersRound,
   Wallet,
@@ -31,19 +32,21 @@ const financeiro: NavItem = { href: "/financeiro", label: "Financeiro", icon: Wa
 const painel: NavItem = { href: "/painel", label: "Painel", icon: LineChart }
 const equipe: NavItem = { href: "/equipe", label: "Equipe", icon: UsersRound }
 const configuracoes: NavItem = { href: "/configuracoes", label: "Ajustes", icon: Settings }
+const meuMes: NavItem = { href: "/meu-mes", label: "Meu mês", icon: Trophy }
+const campanhas: NavItem = { href: "/campanhas", label: "Campanhas", icon: Megaphone }
 const conta: NavItem = { href: "/conta", label: "Conta", icon: CircleUser }
 const mais: NavItem = { href: "/mais", label: "Mais", icon: Menu }
 
 /** Barra inferior (celular): no máximo 5 itens. */
 export function bottomNav(role: Staff["role"]): NavItem[] {
-  return role === "admin" ? [tarefas, agenda, alunos, financeiro, mais] : [agora, agenda, alunos, conta]
+  return role === "admin" ? [tarefas, agenda, alunos, financeiro, mais] : [agora, agenda, alunos, meuMes, conta]
 }
 
 /** Trilho lateral (tablet/computador): tudo visível. */
 export function railNav(role: Staff["role"]): NavItem[] {
   return role === "admin"
-    ? [tarefas, agora, agenda, alunos, financeiro, painel, equipe, configuracoes]
-    : [agora, agenda, alunos]
+    ? [tarefas, agora, agenda, alunos, financeiro, painel, equipe, campanhas, configuracoes]
+    : [agora, agenda, alunos, meuMes]
 }
 
 /** Itens da tela "Mais" do admin no celular. */
@@ -51,6 +54,7 @@ export const moreItems: NavItem[] = [
   { ...agora, label: "Minha aula agora" },
   painel,
   equipe,
+  campanhas,
   { ...configuracoes, label: "Configurações" },
   conta,
 ]

@@ -1,9 +1,11 @@
+import { Trophy } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 
 import { PageHeader } from "@/components/shell/page-header"
 import { competenceLabel } from "@/features/financeiro/lib"
 import { getDashboard } from "@/features/painel/queries"
+import { getPayoutReport, getRanking, monthStart } from "@/features/repasses/queries"
 import { requireAdmin } from "@/lib/auth"
 import { firstName, formatBRL } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -45,7 +47,10 @@ function Meter({ value, max, label }: { value: number; max: number; label: strin
 
 export default async function PainelPage() {
   await requireAdmin()
-  const d = await getDashboard()
+  const month = monthStart()
+  const [d, ranking, payouts] = await Promise.all([getDashboard(), getRanking(month), getPayoutReport(month)])
+  const payoutTotal = payouts.reduce((n, r) => n + r.total_cents, 0)
+  const bonusTotal = payouts.reduce((n, r) => n + r.bonus_cents, 0)
   const rev = d.revenue.current
   const revPct = rev.expected ? Math.round((rev.received / rev.expected) * 100) : 0
 
@@ -124,6 +129,36 @@ export default async function PainelPage() {
           </p>
         </section>
       </div>
+
+      <section aria-labelledby="professores" className="grid content-start gap-4 rounded-xl border border-border bg-card p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 id="professores" className="flex items-center gap-2 font-display text-xl font-bold uppercase">
+              <Trophy className="size-5 text-brand-ink" aria-hidden /> Professores no mês
+            </h2>
+            <p className="text-sm text-muted-foreground">Ranking por aulas dadas (com aluno presente) e repasses até agora.</p>
+          </div>
+          <Link href="/financeiro/repasses" className="grid text-right hover:underline">
+            <span className="text-2xl font-bold tabular-nums">{formatBRL(payoutTotal)}</span>
+            <span className="text-sm text-muted-foreground">em repasses{bonusTotal > 0 && ` · ${formatBRL(bonusTotal)} de bônus`}</span>
+          </Link>
+        </div>
+        {ranking.every((r) => r.classes === 0) ? (
+          <p className="text-muted-foreground">Nenhuma aula com presença ainda neste mês.</p>
+        ) : (
+          <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {ranking.map((r) => (
+              <li key={r.personal_id} className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2">
+                <span className={cn("w-7 font-display text-xl font-bold", r.rank_position === 1 && "text-brand-ink")}>{r.rank_position}º</span>
+                <span className="flex-1 font-semibold">{firstName(r.full_name)}</span>
+                <span className="text-sm tabular-nums">
+                  {r.classes} {r.classes === 1 ? "aula" : "aulas"} · {r.checkins} presenças
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
 
       {d.students.waiting > 0 && (
         <Link href="/tarefas" className="rounded-xl border border-border bg-card px-5 py-4 font-medium hover:border-foreground/30">

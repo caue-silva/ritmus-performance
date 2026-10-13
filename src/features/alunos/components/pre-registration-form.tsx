@@ -8,15 +8,17 @@ import { toast } from "sonner"
 import { FormAlert } from "@/components/feedback/form-field"
 import { TextField } from "@/components/form/fields"
 import { Button } from "@/components/ui/button"
+import { type Referrer, ReferrerChips } from "@/features/repasses/components/referral-editor"
 import { maskPhone } from "@/lib/validation"
 
 import { createPreRegistration } from "../actions"
 
 type Created = { studentId: string; link: string; whatsappUrl: string | null; name: string }
 
-export function PreRegistrationForm() {
+export function PreRegistrationForm({ referrers }: { referrers: Referrer[] }) {
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
+  const [referredBy, setReferredBy] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string>()
   const [created, setCreated] = useState<Created | null>(null)
@@ -25,7 +27,7 @@ export function PreRegistrationForm() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     start(async () => {
-      const res = await createPreRegistration({ full_name: name, whatsapp: phone })
+      const res = await createPreRegistration({ full_name: name, whatsapp: phone, referredBy })
       if (!res.ok) {
         setErrors(res.fieldErrors ?? {})
         setFormError(res.fieldErrors ? undefined : res.message)
@@ -40,6 +42,7 @@ export function PreRegistrationForm() {
       setCreated(null)
       setName("")
       setPhone("")
+      setReferredBy(null)
     }} />
   }
 
@@ -72,6 +75,13 @@ export function PreRegistrationForm() {
         placeholder="(15) 99999-9999"
         error={errors.whatsapp}
       />
+      {referrers.length > 0 && (
+        <fieldset className="grid gap-2">
+          <legend className="mb-2 text-sm font-semibold">Quem trouxe o aluno?</legend>
+          <ReferrerChips value={referredBy} onChange={setReferredBy} people={referrers} />
+          <p className="text-sm text-muted-foreground">Conta para o bônus das campanhas de indicação.</p>
+        </fieldset>
+      )}
       <Button type="submit" size="lg" disabled={pending}>
         {pending ? <Loader2 className="animate-spin" aria-hidden /> : <UserPlus aria-hidden />}
         Criar e gerar link

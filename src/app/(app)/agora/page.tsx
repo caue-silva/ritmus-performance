@@ -7,6 +7,8 @@ import { InstallBanner } from "@/components/pwa/install-app"
 import { PageHeader } from "@/components/shell/page-header"
 import { Button } from "@/components/ui/button"
 import { SessionView } from "@/features/agenda/components/session-view"
+import { CampaignBanner } from "@/features/campanhas/components/campaign-banner"
+import { getActiveCampaigns } from "@/features/campanhas/queries"
 import { getNow, getRoster } from "@/features/agenda/queries"
 import { requireStaff } from "@/lib/auth"
 import { addMinutes, formatDayShort, minutesOf, nowTimeSP, todaySP } from "@/lib/dates"
@@ -17,13 +19,14 @@ export const metadata: Metadata = { title: "Agora" }
 
 export default async function AgoraPage() {
   const staff = await requireStaff()
-  const now = await getNow(staff.id)
+  const [now, campaigns] = await Promise.all([getNow(staff.id), getActiveCampaigns()])
   const today = todaySP()
 
   if (now.kind === "nenhuma") {
     return (
       <>
         <PageHeader title="Agora" description={`Bom treino, ${firstName(staff.full_name)}!`} />
+        <CampaignBanner campaigns={campaigns} />
         <EmptyState
           icon={Timer}
           title={now.today.length ? "Aulas de hoje encerradas" : "Nenhuma aula hoje"}
@@ -87,6 +90,7 @@ export default async function AgoraPage() {
         canManage
         isAdmin={staff.role === "admin"}
       />
+      <CampaignBanner campaigns={campaigns} className="mt-8 mb-0" />
     </>
   )
 }

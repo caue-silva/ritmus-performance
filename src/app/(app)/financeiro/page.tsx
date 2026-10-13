@@ -1,4 +1,4 @@
-import { BarChart3, ChevronLeft, ChevronRight } from "lucide-react"
+import { BarChart3, ChevronLeft, ChevronRight, HandCoins } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 
@@ -69,11 +69,18 @@ export default async function FinanceiroPage({ searchParams }: PageProps<"/finan
         title="Financeiro"
         description="Mensalidades do mês. Cobre pelo WhatsApp e confirme quando o aluno pagar."
         actions={
-          <Button asChild variant="outline" size="lg">
-            <Link href="/financeiro/relatorios">
-              <BarChart3 aria-hidden /> Relatórios
-            </Link>
-          </Button>
+          <>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/financeiro/repasses">
+                <HandCoins aria-hidden /> Repasses
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/financeiro/relatorios">
+                <BarChart3 aria-hidden /> Relatórios
+              </Link>
+            </Button>
+          </>
         }
       />
 

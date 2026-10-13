@@ -32,6 +32,9 @@ O seed imprime o link de cadastro do pré-cadastro "Carolina Dias" (para testar 
 - **RLS em toda tabela**, políticas em `*_rls.sql` (ou na migration da tabela nova, com o mesmo padrão). `anon` não acessa nada.
 - Helpers de política ficam no schema `app` (não exposto): `app.is_admin()`, `app.is_staff()`, `app.owns_student()`, `app.owns_slot()`, `app.owns_session()`. Use `(select app.is_admin())` nas políticas.
 - **Financeiro só para admin.** Colunas de dinheiro vivem apenas em `student_billing`, `charges`, `charge_events`, `studio_settings`. Nunca adicionar coluna financeira em tabela legível por personal, nem criar view/RPC acessível ao personal que junte essas tabelas. Nenhuma tela, badge ou contador pode revelar ao personal se um aluno está em dia.
+- **Repasses (Fase 7):** comissão em `staff_commission_rates` (basis points, `valid_from`; vale o % da data do pagamento), professor da mensalidade congelado em `charges.personal_id`, pagamentos em `staff_payouts`, todas só admin. Cálculo único em `app.payout_lines(mês)` (por `paid_on`); admin lê por `payout_report`/`payout_details`. O personal só vê o **próprio total** via `my_payout` (total, bônus, pago): nunca por aluno, nunca valor de mensalidade.
+- Bônus de indicação: 1ª mensalidade (não cancelada) de aluno com `students.referred_by`, ativado dentro de campanha com `referral_bonus`, vai 100% para quem trouxe. `referred_by` e `profiles.joins_ranking` só o admin muda (trigger).
+- Ranking/selo: `teaching_ranking(mês)` (aulas com aluno presente, desempate por presenças; sem dados financeiros); selo do mês anterior gravado por `ensure_monthly_awards()` (chamado no layout, idempotente). Campanhas: tabela `campaigns` (staff lê, admin escreve) + bucket público `campaigns` (arte 1600×800, cortada no aparelho).
 - PAR-Q/saúde (`student_health`): personal lê só dos próprios alunos; dono de horário **não** vê saúde de aluno de reposição.
 - Regras de negócio que importam (capacidade 4, um horário por vez, ativação exige liberação médica, quem pode mudar status) são garantidas por **constraint/trigger no banco**, com mensagem de erro em pt-BR — a UI só repete a regra.
 - Service role: só `src/lib/supabase/admin.ts` (`server-only`), e só para contas da equipe e o formulário público por token. Sempre checar permissão de quem chamou antes.
@@ -60,7 +63,7 @@ O seed imprime o link de cadastro do pré-cadastro "Carolina Dias" (para testar 
 - Integrações futuras atrás de interfaces em `src/integrations/` (NotificationChannel, PaymentProvider).
 
 ## UX (requisito, não acabamento)
-- Mobile-first: testar 375, 768 e 1024px. Celular: barra inferior (admin: Tarefas·Agenda·Alunos·Financeiro·Mais; personal: Agora·Agenda·Alunos·Conta). md+: trilho lateral.
+- Mobile-first: testar 375, 768 e 1024px. Celular: barra inferior (admin: Tarefas·Agenda·Alunos·Financeiro·Mais; personal: Agora·Agenda·Alunos·Meu mês·Conta). md+: trilho lateral.
 - Tela inicial: admin → `/tarefas`; personal → `/agora`.
 - Alvos de toque ≥ 44px (`h-tap`), ação principal 52px (`h-tap-lg`, `size="lg"`). Ações principais na metade de baixo da tela.
 - Confirmações destrutivas usam `submitVariant="destructive"` no `ActionSheet` (vermelho), nunca o laranja.

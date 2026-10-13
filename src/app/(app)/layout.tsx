@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/shell/app-shell"
 import { ensureMonthlyCharges } from "@/features/financeiro/queries"
+import { ensureMonthlyAwards } from "@/features/repasses/queries"
 import { countOpenTasks } from "@/features/tarefas/queries"
 import { requireStaff } from "@/lib/auth"
 
@@ -8,6 +9,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Sem rotina agendada: sempre que o admin abre o app, as mensalidades do mês são
   // garantidas (idempotente). O contador só existe para o admin (inclui financeiro).
   if (staff.role === "admin") await ensureMonthlyCharges()
+  await ensureMonthlyAwards() // selo do mês anterior (idempotente)
   const taskCount = staff.role === "admin" ? await countOpenTasks() : 0
   return (
     <AppShell staff={staff} taskCount={taskCount}>

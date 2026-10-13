@@ -118,6 +118,10 @@ type SeedStudent = {
   parq?: boolean[]
   notes?: string
   clearance?: boolean
+  /** Ativado há quantos dias (padrão: ~2 meses). */
+  daysAgo?: number
+  /** Quem trouxe o aluno (bônus de indicação). */
+  referredBy?: StaffKey
 }
 
 const NO = [false, false, false, false, false, false, false]
@@ -161,6 +165,8 @@ const STUDENTS: SeedStudent[] = [
   },
   // Cadastro recebido sem pendências → tarefa "Ativar".
   { name: "Tatiane Gomes", personal: null, status: "aguardando", freq: 2 },
+  // Aluna nova de outubro, indicada pela Ana durante a campanha (1ª mensalidade = bônus da Ana).
+  { name: "Bruna Teixeira", personal: "bruno", status: "ativo", freq: 2, daysAgo: 10, referredBy: "ana" },
   // Demonstração: aluno com WhatsApp real (o do Cauê), para ver as mensagens chegarem de verdade.
   ...(DEMO ? [{ name: "Cauê Belarmino", personal: "gabriel" as const, status: "ativo" as const, freq: 2, whatsapp: "11986435668" }] : []),
 ]
@@ -178,6 +184,39 @@ async function waitForServices() {
     await new Promise((r) => setTimeout(r, 1000))
   }
   throw new Error("O Supabase local não respondeu em 30s. Ele está rodando? (npm run db:start)")
+}
+
+/** Arte de exemplo (gerada aqui mesmo) + campanha do mês atual com bônus de indicação. */
+async function seedCampaign(adminId: string) {
+  const sharp = (await import("sharp")).default
+  const month = today().slice(0, 7)
+  const monthName = new Date(`${month}-15T12:00:00Z`).toLocaleDateString("pt-BR", { month: "long", timeZone: "UTC" })
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="800">
+    <rect width="1600" height="800" fill="#0b0b0b"/>
+    <circle cx="1350" cy="400" r="330" fill="#f05b2a"/>
+    <text x="90" y="230" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="64" fill="#f05b2a">CAMPANHA DE ${monthName.toUpperCase()}</text>
+    <text x="90" y="380" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="128" fill="#ffffff">TRAGA UM</text>
+    <text x="90" y="510" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="128" fill="#ffffff">AMIGO</text>
+    <text x="90" y="620" font-family="Arial, sans-serif" font-size="48" fill="#d6d3cf">A 1ª mensalidade dele é 100% sua.</text>
+    <text x="1350" y="440" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="150" fill="#0b0b0b">100%</text>
+  </svg>`
+  const png = await sharp(Buffer.from(svg)).jpeg({ quality: 85 }).toBuffer()
+  const path = `seed/${month}-traga-um-amigo.jpg`
+  const { error } = await db.storage.from("campaigns").upload(path, png, { contentType: "image/jpeg", upsert: true })
+  if (error) throw error
+  const imageUrl = db.storage.from("campaigns").getPublicUrl(path).data.publicUrl
+  const lastDay = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).getUTCDate()
+  must(
+    await db.from("campaigns").insert({
+      title: `Traga um amigo em ${monthName}`,
+      body: "Indicou e o aluno fechou este mês? A 1ª mensalidade dele entra 100% no seu repasse. Avise o Gabriel no pré-cadastro.",
+      image_url: imageUrl,
+      starts_on: `${month}-01`,
+      ends_on: `${month}-${lastDay}`,
+      referral_bonus: true,
+      created_by: adminId,
+    }),
+  )
 }
 
 async function main() {
@@ -201,6 +240,17 @@ async function main() {
     console.log("• Já existem alunos — nada mais a fazer. Use npm run db:reset para recomeçar.")
     return
   }
+
+  // Comissão dos professores (o Gabriel fica com 0%: os alunos dele são do estúdio)
+  must(
+    await db.from("staff_commission_rates").insert([
+      { personal_id: ids.ana, rate_bp: 6500, valid_from: `${today().slice(0, 4)}-01-01`, created_by: ids.gabriel },
+      { personal_id: ids.bruno, rate_bp: 6500, valid_from: `${today().slice(0, 4)}-01-01`, created_by: ids.gabriel },
+    ]),
+  )
+
+  // Campanha do mês com arte e bônus de indicação
+  await seedCampaign(ids.gabriel)
 
   // Horários fixos
   const slotRows: TablesInsert<"time_slots">[] = []
@@ -239,7 +289,7 @@ async function main() {
           goals: GOALS[i % GOALS.length],
           height_cm: 155 + ((i * 7) % 35),
           weekly_frequency: s.freq,
-          submitted_at: isoDaysAgo(s.status === "aguardando" ? 1 + (i % 2) : 60 + i),
+          submitted_at: isoDaysAgo(s.status === "aguardando" ? 1 + (i % 2) : (s.daysAgo ?? 59 + i) + 1),
         })
         .select("id")
         .single(),
@@ -258,7 +308,7 @@ async function main() {
     must(
       await db
         .from("consents")
-        .insert(legalDocs.map((d) => ({ student_id: student.id, legal_document_id: d.id!, accepted_at: isoDaysAgo(60 + i) }))),
+        .insert(legalDocs.map((d) => ({ student_id: student.id, legal_document_id: d.id!, accepted_at: isoDaysAgo((s.daysAgo ?? 59 + i) + 1) }))),
     )
     must(
       await db.from("student_billing").insert({
@@ -273,7 +323,7 @@ async function main() {
       await db.from("measurements").insert({
         client_id: crypto.randomUUID(),
         student_id: student.id,
-        measured_at: isoDaysAgo(s.status === "aguardando" ? 1 : 60 + i),
+        measured_at: isoDaysAgo(s.status === "aguardando" ? 1 : (s.daysAgo ?? 59 + i) + 1),
         weight_kg: 58 + ((i * 11) % 40),
         source: "cadastro",
         created_by: null,
@@ -284,7 +334,12 @@ async function main() {
       must(
         await db
           .from("students")
-          .update({ status: s.status, activated_at: isoDaysAgo(59 + i), activated_by: ids.gabriel })
+          .update({
+            status: s.status,
+            activated_at: isoDaysAgo(s.daysAgo ?? 59 + i),
+            activated_by: ids.gabriel,
+            referred_by: s.referredBy ? ids[s.referredBy] : null,
+          })
           .eq("id", student.id),
       )
     }
@@ -302,7 +357,7 @@ async function main() {
               chosen.map((t) => ({
                 student_id: student.id,
                 time_slot_id: t.id,
-                starts_on: isoDaysAgo(59 + i).slice(0, 10),
+                starts_on: isoDaysAgo(s.daysAgo ?? 59 + i).slice(0, 10),
                 created_by: ids.gabriel,
               })),
             ),
@@ -489,11 +544,35 @@ async function main() {
     .select("id, full_name, due_date, amount_cents")
     .eq("competence", monthOf(todayISO, 0))
   for (const c of current ?? []) {
-    if (c.due_date! < todayISO && c.full_name !== "Lucas Santos") {
-      must(await db.from("charges").update({ status: "pago", paid_on: c.due_date!, payment_method: "pix" }).eq("id", c.id!))
+    // A 1ª mensalidade da Bruna (indicada pela Ana) já foi paga: mostra o bônus no repasse.
+    const paidEarly = c.full_name === "Bruna Teixeira"
+    if ((c.due_date! < todayISO && c.full_name !== "Lucas Santos") || paidEarly) {
+      const paidOn = paidEarly ? todayISO : c.due_date!
+      must(await db.from("charges").update({ status: "pago", paid_on: paidOn, payment_method: "pix" }).eq("id", c.id!))
     }
   }
   console.log(`✔ Financeiro: ${chargeRows.length + (current?.length ?? 0)} mensalidades (atrasos: ${overdueNames.join(", ")} e Lucas Santos; vence hoje: Mariana Oliveira)`)
+
+  // Repasse do mês anterior já pago e selo "Professor do mês" do mês anterior
+  const prevMonth = monthOf(todayISO, 1)
+  const { data: report } = await db.rpc("payout_report", { p_month: prevMonth })
+  const payouts = (report ?? []).filter((r) => r.total_cents > 0)
+  if (payouts.length) {
+    must(
+      await db.from("staff_payouts").insert(
+        payouts.map((r) => ({
+          personal_id: r.personal_id,
+          month: prevMonth,
+          amount_cents: r.total_cents,
+          paid_on: addDaysISO(prevMonth, 35),
+          payment_method: "pix" as const,
+          created_by: ids.gabriel,
+        })),
+      ),
+    )
+  }
+  must(await db.rpc("ensure_monthly_awards"))
+  console.log(`✔ Repasses: ${payouts.length} do mês anterior pagos; selo do mês anterior definido`)
 
   // Pré-cadastro com link enviado (formulário ainda não preenchido)
   const invited = must(

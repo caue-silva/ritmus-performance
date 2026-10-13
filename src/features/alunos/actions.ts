@@ -65,6 +65,7 @@ const preSchema = z.object({
 export async function createPreRegistration(input: {
   full_name: string
   whatsapp: string
+  referredBy?: string | null
 }): Promise<ActionResult<{ studentId: string; link: string; whatsappUrl: string | null }>> {
   await requireAdmin()
   const parsed = preSchema.safeParse(input)
@@ -76,7 +77,7 @@ export async function createPreRegistration(input: {
   const name = parsed.data.full_name.replace(/\s+/g, " ")
   const { data: student, error } = await supabase
     .from("students")
-    .insert({ full_name: name, whatsapp, status: "convidado" })
+    .insert({ full_name: name, whatsapp, status: "convidado", referred_by: z.uuid().safeParse(input.referredBy).data ?? null })
     .select("id")
     .single()
   if (error) return fail(dbMessage(error, "Não foi possível criar o pré-cadastro. Tente de novo."))

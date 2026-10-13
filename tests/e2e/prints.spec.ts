@@ -7,7 +7,7 @@ import { test, type Page } from "@playwright/test"
 import { generateToken, hashToken } from "../../src/lib/tokens"
 import { login, PASSWORD, service, USERS, VIEWPORTS } from "./support"
 
-const PHASE = process.env.PRINTS_PHASE ?? "fase-6"
+const PHASE = process.env.PRINTS_PHASE ?? "fase-7"
 const TAG = `print${Date.now().toString(36)}`
 
 async function shoot(page: Page, name: string, opts: { dark?: boolean; full?: boolean } = {}) {
@@ -301,4 +301,55 @@ test("painel, conta, LGPD e sem conexão", async ({ page }) => {
   await page.keyboard.press("Escape")
   await page.goto("/offline.html")
   await one(page, "offline")
+})
+
+test("repasses e campanhas", async ({ page, browser }) => {
+  await login(page, USERS.admin)
+  await page.goto("/financeiro/repasses")
+  await shoot(page, "admin-repasses")
+  await page.setViewportSize({ width: 375, height: 812 })
+  const ana = page.getByRole("article").filter({ hasText: "Ana" })
+  await ana.getByRole("button", { name: /Ver \d+ pagamento/ }).click()
+  await ana.scrollIntoViewIfNeeded()
+  await one(page, "admin-repasses-detalhe")
+  await ana.getByRole("button", { name: "Marcar como pago" }).click()
+  await one(page, "admin-repasses-pagar")
+  await page.keyboard.press("Escape")
+  const { data: prev } = await service().from("staff_payouts").select("month").order("month", { ascending: false }).limit(1).single()
+  if (prev) {
+    await page.goto(`/financeiro/repasses?mes=${prev.month.slice(0, 7)}`)
+    await shoot(page, "admin-repasses-mes-anterior")
+  }
+
+  await page.goto("/equipe")
+  await shoot(page, "admin-equipe")
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.getByRole("listitem").filter({ hasText: "ana@ritmus.test" }).getByRole("button", { name: "Comissão e ranking" }).click()
+  await one(page, "admin-equipe-comissao")
+  await page.keyboard.press("Escape")
+
+  await page.goto("/campanhas")
+  await shoot(page, "admin-campanhas")
+  await page.locator("main").getByRole("link", { name: /Traga um amigo/ }).first().click()
+  await page.waitForURL(/\/campanhas\/[0-9a-f-]{36}/)
+  await shoot(page, "admin-campanha-editar")
+
+  await page.goto("/painel")
+  await shoot(page, "admin-painel")
+  await page.goto(`/alunos/${await studentId("Bruna Teixeira")}`)
+  await shoot(page, "admin-aluno-indicado")
+  await page.goto("/alunos/novo")
+  await shoot(page, "admin-novo-aluno")
+  await page.goto("/mais")
+  await one(page, "admin-mais")
+
+  const ctx = await browser.newContext({ reducedMotion: "reduce" })
+  const p = await ctx.newPage()
+  await login(p, USERS.personal)
+  await shoot(p, "personal-agora")
+  await p.goto("/meu-mes")
+  await shoot(p, "personal-meu-mes")
+  await p.emulateMedia({ colorScheme: "dark" })
+  await shoot(p, "personal-meu-mes", { dark: true })
+  await ctx.close()
 })

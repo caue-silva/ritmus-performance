@@ -36,7 +36,10 @@ for (const scheme of ["light", "dark"] as const) {
         "/financeiro",
         `/financeiro/${c!.id}`,
         "/financeiro/relatorios",
+        "/financeiro/repasses",
         "/painel",
+        "/campanhas",
+        "/campanhas/nova",
         "/equipe",
         "/configuracoes",
         "/configuracoes/horarios",
@@ -49,7 +52,7 @@ for (const scheme of ["light", "dark"] as const) {
 
     test("personal", async ({ page }) => {
       await login(page, USERS.personal)
-      for (const path of ["/agora", "/agenda", "/alunos"]) {
+      for (const path of ["/agora", "/agenda", "/alunos", "/meu-mes"]) {
         await page.goto(path)
         await audit(page, path)
       }
