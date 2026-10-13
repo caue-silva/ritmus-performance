@@ -210,7 +210,7 @@ export function ActivationSheet({
         inputMode="numeric"
         error={errors.due_day}
         hint="O aluno escolheu esse dia no cadastro. Ajuste se precisar."
-        className="max-w-48"
+        className="[&_input]:max-w-32"
       />
     </ActionSheet>
   )

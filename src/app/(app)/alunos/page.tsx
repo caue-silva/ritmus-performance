@@ -57,7 +57,7 @@ export default async function AlunosPage({ searchParams }: PageProps<"/alunos">)
       />
 
       {all.length > 0 && (
-        <nav aria-label="Filtrar por status" className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0">
+        <nav aria-label="Filtrar por status" className="no-scrollbar -mx-4 mb-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
           {FILTERS.filter((f) => f.id === "todos" || f.id === active || counts[f.id]).map((f) => (
             <Link
               key={f.id}

@@ -117,7 +117,7 @@ export function FeeSheet({
           setError(undefined)
         }}
         error={error}
-        autoFocus
+        data-autofocus
       />
       {suggestion && parseMoneyToCents(fee) !== suggestion && (
         <button

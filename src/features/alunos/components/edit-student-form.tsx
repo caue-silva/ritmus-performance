@@ -14,6 +14,18 @@ import { updateStudent, type StudentEditInput } from "../actions"
 
 type Values = Required<{ [K in keyof StudentEditInput]: string }>
 
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  const id = `grupo-${title.toLowerCase().replace(/\W+/g, "-")}`
+  return (
+    <section role="group" aria-labelledby={id} className="grid gap-4 rounded-xl border border-border bg-card p-5">
+      <h2 id={id} className="font-display text-xl font-bold uppercase">
+        {title}
+      </h2>
+      {children}
+    </section>
+  )
+}
+
 export function EditStudentForm({ studentId, initial }: { studentId: string; initial: Values }) {
   const router = useRouter()
   const [v, setV] = useState(initial)
@@ -50,18 +62,16 @@ export function EditStudentForm({ studentId, initial }: { studentId: string; ini
   }
 
   return (
-    <form onSubmit={submit} className="grid gap-6 pb-24 md:pb-0" noValidate>
-      <fieldset className="grid gap-4 rounded-xl border border-border bg-card p-5">
-        <legend className="px-1 font-display text-xl font-bold uppercase">Contato</legend>
+    <form onSubmit={submit} className="grid gap-4 pb-24 md:pb-0" noValidate>
+      <Group title="Contato">
         {field("full_name", "Nome completo", { autoCapitalize: "words" })}
         <div className="grid gap-4 sm:grid-cols-2">
           {field("whatsapp", "WhatsApp", { mask: maskPhone, inputMode: "tel" })}
           {field("email", "E-mail", { inputMode: "email", type: "email", autoCapitalize: "none" })}
         </div>
-      </fieldset>
+      </Group>
 
-      <fieldset className="grid gap-4 rounded-xl border border-border bg-card p-5">
-        <legend className="px-1 font-display text-xl font-bold uppercase">Endereço</legend>
+      <Group title="Endereço">
         <div className="grid grid-cols-[1fr_5rem] gap-3 sm:grid-cols-[10rem_1fr_5rem]">
           {field("cep", "CEP", { mask: maskCEP, inputMode: "numeric", className: "col-span-2 sm:col-span-1" })}
           {field("city", "Cidade")}
@@ -73,22 +83,20 @@ export function EditStudentForm({ studentId, initial }: { studentId: string; ini
           {field("complement", "Complemento")}
         </div>
         {field("neighborhood", "Bairro")}
-      </fieldset>
+      </Group>
 
-      <fieldset className="grid gap-4 rounded-xl border border-border bg-card p-5">
-        <legend className="px-1 font-display text-xl font-bold uppercase">Emergência</legend>
+      <Group title="Emergência">
         {field("emergency_name", "Nome")}
         <div className="grid gap-4 sm:grid-cols-2">
           {field("emergency_phone", "Telefone", { mask: maskPhone, inputMode: "tel" })}
           {field("emergency_relation", "Quem é")}
         </div>
-      </fieldset>
+      </Group>
 
-      <fieldset className="grid gap-4 rounded-xl border border-border bg-card p-5">
-        <legend className="px-1 font-display text-xl font-bold uppercase">Objetivos e medidas</legend>
+      <Group title="Objetivos e medidas">
         {field("goals_notes", "Objetivos (observação)", { multiline: true })}
         {field("height", "Altura", { inputMode: "decimal", suffix: "m", className: "max-w-48", hint: "Em metros (1,70) ou centímetros (170)." })}
-      </fieldset>
+      </Group>
 
       <FormAlert>{formError}</FormAlert>
       <div className="fixed inset-x-0 bottom-[calc(var(--nav-h)+env(safe-area-inset-bottom))] z-20 border-t border-border bg-background/95 px-4 py-3 backdrop-blur md:static md:border-0 md:bg-transparent md:p-0">

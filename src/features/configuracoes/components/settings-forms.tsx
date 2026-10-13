@@ -122,9 +122,6 @@ export function ReferenceFeesForm({ fees }: { fees: Record<string, number> }) {
         })
       }}
     >
-      <p className="text-sm text-muted-foreground">
-        Só uma sugestão na hora de definir o valor: cada aluno tem o valor combinado com você.
-      </p>
       <div className="grid gap-3 sm:grid-cols-3">
         {keys.map((k) => (
           <MoneyField key={k} id={`fee-${k}`} label={`${k}x por semana`} value={values[k] ?? ""} onChange={(v) => setValues((x) => ({ ...x, [k]: v }))} />

@@ -157,6 +157,13 @@
   html {
     @apply font-sans;
     -webkit-tap-highlight-color: transparent;
+    /* Âncoras (ex.: #saude) param abaixo do cabeçalho fixo */
+    scroll-padding-top: 5rem;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
   body {
     @apply bg-background text-foreground antialiased;

@@ -15,8 +15,8 @@ const DOCS = [
 
 function Section({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
-    <section className="grid gap-4 rounded-xl border border-border bg-card p-5">
-      <div>
+    <section className="grid gap-5 rounded-xl border border-border bg-card p-5">
+      <div className="grid gap-1">
         <h2 className="font-display text-xl font-bold uppercase">{title}</h2>
         {description && <p className="text-sm text-muted-foreground">{description}</p>}
       </div>
@@ -39,7 +39,10 @@ export default async function ConfiguracoesPage() {
       <Section title="Cadastro de alunos" description="O que o aluno recebe e aceita ao se cadastrar.">
         <InviteMessageForm message={settings?.msg_invite ?? ""} />
       </Section>
-      <Section title="Valores de referência">
+      <Section
+        title="Valores de referência"
+        description="Só uma sugestão na hora de definir o valor: cada aluno tem o valor combinado com você."
+      >
         <ReferenceFeesForm fees={(settings?.reference_fees as Record<string, number>) ?? {}} />
       </Section>
       <Section

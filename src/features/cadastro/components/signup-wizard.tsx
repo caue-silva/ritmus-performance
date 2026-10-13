@@ -39,7 +39,7 @@ export function SignupWizard({
   const [submitError, setSubmitError] = useState<string>()
   const [done, setDone] = useState(false)
   const [cepState, setCepState] = useState<"idle" | "loading" | "notfound">("idle")
-  const topRef = useRef<HTMLDivElement>(null)
+  const titleRef = useRef<HTMLHeadingElement>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const today = todaySP()
 
@@ -94,7 +94,11 @@ export function SignupWizard({
     setStep(next)
     setSubmitError(undefined)
     scheduleSave(draft, next)
-    requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: "smooth" }))
+    // Nova etapa começa no topo, com o foco no título (leitor de tela anuncia a etapa).
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0 })
+      titleRef.current?.focus({ preventScroll: true })
+    })
   }
 
   const next = () => {
@@ -199,7 +203,7 @@ export function SignupWizard({
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header ref={topRef} className="dark sticky top-0 z-20 bg-sidebar pt-[env(safe-area-inset-top)] text-sidebar-foreground">
+      <header className="dark sticky top-0 z-20 bg-sidebar pt-[env(safe-area-inset-top)] text-sidebar-foreground">
         <div className="mx-auto flex max-w-lg items-center gap-3 px-4 py-3">
           <Logo size={40} />
           <div className="min-w-0 flex-1">
@@ -222,8 +226,10 @@ export function SignupWizard({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-lg flex-1 px-5 pt-6 pb-36">
-        <h1 className="mb-1 font-display text-3xl font-bold uppercase">{STEPS[step]!.title}</h1>
+      <main className="mx-auto w-full max-w-lg flex-1 px-5 pt-6 pb-[calc(7rem+env(safe-area-inset-bottom))]">
+        <h1 ref={titleRef} tabIndex={-1} className="mb-2 font-display text-3xl font-bold uppercase outline-none">
+          {STEPS[step]!.title}
+        </h1>
 
         {step === 0 && (
           <div className="grid gap-5">

@@ -41,6 +41,14 @@ export function ActionSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={desktop ? "right" : "bottom"}
+        onOpenAutoFocus={(e) => {
+          // O foco automático rolava o painel até o primeiro botão. Foca o campo marcado
+          // com data-autofocus (ou o próprio painel) sem rolar.
+          e.preventDefault()
+          const panel = e.currentTarget as HTMLElement
+          const target = panel.querySelector<HTMLElement>("[data-autofocus]") ?? panel
+          target.focus({ preventScroll: true })
+        }}
         className={cn(
           "gap-0 p-0",
           desktop ? "w-full sm:max-w-md" : "max-h-[92dvh] rounded-t-2xl",
@@ -63,7 +71,7 @@ export function ActionSheet({
           }}
           noValidate
         >
-          <div className="grid min-h-0 flex-1 content-start gap-5 overflow-y-auto px-5 py-5">{children}</div>
+          <div className="grid min-h-0 flex-1 content-start gap-5 overflow-y-auto overscroll-contain px-5 py-5">{children}</div>
           <div className="grid gap-3 border-t border-border px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {error && (
               <p role="alert" className="text-sm font-medium text-destructive">

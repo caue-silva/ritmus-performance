@@ -137,7 +137,7 @@ export default async function AlunoPage({ params }: PageProps<"/alunos/[id]">) {
           </p>
         </Section>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-5 lg:grid-cols-2">
           <Section title="Contato">
             <dl className="grid gap-2">
               <Info label="WhatsApp">{formatPhone(s.whatsapp)}</Info>
