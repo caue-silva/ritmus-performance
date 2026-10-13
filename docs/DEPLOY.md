@@ -16,9 +16,10 @@ Passo a passo para colocar o Ritmus no ar. Faça na ordem. Nenhuma chave secreta
    ```
    O `<ref-do-projeto>` está na URL do painel: `supabase.com/dashboard/project/<ref>`.
    Isso cria tabelas, regras de acesso (RLS), funções, o espaço das fotos e os dados iniciais (textos, mensagens, funcionamento). **Não** rode o seed: ele é só para testes.
-3. **Authentication → Sign In / Providers → Email:**
-   - desligue **Confirm email** (o sistema não envia e-mails);
-   - desligue **Allow new users to sign up** (contas só pelo Gabriel, na tela Equipe).
+3. **Authentication → Sign In / Providers:**
+   - no provedor **Email**: deixe **Enable Email provider LIGADO** (é o login do app) e desligue **Confirm email** (o sistema não envia e-mails);
+   - na seção **User Signups**: desligue **Allow new users to sign up** (contas só pelo Gabriel, na tela Equipe).
+   - ⚠️ Não desligue o provedor Email: com ele desligado ninguém consegue entrar ("Email logins are disabled").
 4. **Authentication → URL Configuration:** em **Site URL**, coloque o endereço do app na Vercel (passo 2), por exemplo `https://ritmus-performance-navy.vercel.app`.
 5. **Project Settings → API Keys:** você vai precisar da **URL do projeto**, da **publishable key** e da **secret key**.
 

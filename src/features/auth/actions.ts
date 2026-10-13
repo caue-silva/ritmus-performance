@@ -30,6 +30,10 @@ export async function signIn(_: FormState, formData: FormData): Promise<FormStat
 
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword(parsed.data)
+  if (error?.code === "email_provider_disabled") {
+    // Configuração do Supabase (provedor Email desligado): não é problema da pessoa.
+    return { error: "O login está fora do ar por uma configuração do sistema. Avise o Gabriel." }
+  }
   if (error?.code === "user_banned") {
     return { error: "Sua conta está desativada. Fale com o Gabriel para liberar o acesso." }
   }
