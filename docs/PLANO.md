@@ -301,3 +301,57 @@ Outras decisões da Fase 1:
 - Textos de termos de uso e LGPD serão **provisórios**, marcados como tal, como a declaração de saúde.
 - Medição pode ser registrada fora de aula (ex.: o Gabriel no balcão), sem vínculo com um horário.
 - Deploy inicial no subdomínio `.vercel.app`; domínio próprio fica para depois.
+
+---
+
+## 8. Fase 7 — Repasses dos professores e campanhas (proposta, aguardando aprovação)
+
+Pedido do Gabriel depois da demonstração. Decisões (13/10/2026): comissão sobre o que o aluno **pagou**; o professor vê **só o total do próprio repasse** (sem detalhe por aluno); a comissão fica com o **professor responsável** pelo aluno (reposição não divide); entregar **tudo junto**.
+
+### Modelo de dados
+
+| Tabela / coluna | O que guarda | Quem acessa |
+|---|---|---|
+| `staff_commission_rates` | professor, % (ex.: 65), vale a partir de (data) | só admin |
+| `charges.personal_id` | professor do aluno no momento em que a mensalidade foi gerada (não muda se o aluno trocar de professor depois) | só admin (como já é a tabela) |
+| `students.referred_by` | "quem trouxe o aluno" (professor) | admin edita; personal não altera |
+| `campaigns` | título, texto, arte (imagem), link opcional, início, fim, e a opção "1ª mensalidade 100% para quem trouxe o aluno" | admin cria; equipe lê as do período |
+| `staff_payouts` | repasse do mês marcado como pago: professor, mês, valor, data, forma, observação, quem marcou | só admin |
+| `staff_awards` | selos: professor, mês, "Professor do mês", nº de aulas | equipe lê |
+| `profiles.joins_ranking` | participa do ranking (padrão: personal sim, admin não) | admin edita |
+| bucket `campaigns` | artes das campanhas (leitura pública, escrita só admin) | — |
+
+Funções no banco (todas com teste de permissão):
+- `payout_report(mês)` — admin: por professor, total recebido dos alunos dele no mês, %, comissão, bônus, total, status do repasse e a lista por aluno para conferência.
+- `my_payout(mês)` — personal: **só o próprio total** (parcial durante o mês), quanto é bônus e se já foi pago. Nunca por aluno.
+- `teaching_ranking(mês)` — equipe: aulas dadas por professor no mês (aula com ao menos 1 check-in). Nenhum dado financeiro.
+- `ensure_monthly_awards()` — sem rotina agendada: ao abrir o app, fixa o selo dos meses já encerrados (idempotente).
+
+### Regras de cálculo
+
+1. **Base do repasse:** mensalidades **pagas dentro do mês** (data do pagamento), dos alunos de cada professor. O que o aluno pagou em atraso entra no mês em que pagou.
+2. **Percentual:** o que valia na data do pagamento. Mudar o % vale dali em diante; meses passados não mudam.
+3. **Bônus de indicação:** numa campanha com a opção ligada, aluno **ativado durante o período** e com "quem trouxe" marcado → a **1ª mensalidade** dele vai **100% para quem trouxe**, quando for paga (mesmo se depois do fim da campanha). Nessa mensalidade não há comissão normal para o professor do aluno.
+4. **Professor do mês:** mais aulas dadas no mês; desempate pelo total de check-ins; empate total → todos ganham o selo. O selo é fixado quando o mês termina.
+
+### Telas
+
+**Admin**
+- **Equipe:** no card de cada professor, "Comissão: 65%" (editar, com "vale a partir de"), "Participa do ranking" e os selos conquistados.
+- **Financeiro → Repasses** (nova aba): mês a mês, um card por professor com recebido dos alunos dele, %, comissão, bônus, total, parte do estúdio, e **Marcar como pago** (data, forma, observação, com Desfazer); detalhe por aluno para conferir.
+- **Novo aluno / Ativar aluno / ficha:** campo opcional "Quem trouxe o aluno".
+- **Mais → Campanhas** (nova): criar/editar campanha com arte (enviada do celular; recorte 2:1), período, texto, link e a opção de bônus; prévia de como fica na tela do professor.
+- **Painel:** ranking do mês e total de repasses do mês.
+
+**Personal**
+- **Agora:** banner das campanhas ativas no topo (até 3, deslizando).
+- **Meu mês** (novo item na barra inferior, 5º): aulas dadas e posição no ranking, selos, campanhas ativas e **"Seu repasse de outubro: R$ X"** (parcial até o fim do mês, depois "a receber" ou "pago em dd/mm", com quanto é bônus).
+
+### Premissas (sigo assim se não houver objeção)
+- O Gabriel tem comissão 0% (os alunos dele são 100% do estúdio) e fica fora do ranking; dá para mudar na Equipe.
+- Se quem trouxe o aluno não for o professor dele, quem trouxe fica com 100% da 1ª mensalidade.
+- Mensalidade cancelada ou ajustada: vale o valor efetivamente pago.
+- O repasse marcado como pago guarda o valor do momento; se depois entrar um pagamento atrasado daquele mês, aparece como "diferença a pagar".
+
+### Entrega e testes
+Uma fase, com o fluxo de sempre: testes de permissão (personal nunca vê % de outro professor, repasse de outro, nem detalhe por aluno), testes unitários do cálculo, E2E dos fluxos, prints em 375/768/1024, revisão de UX e commit.
