@@ -378,6 +378,35 @@ describe("agenda: funções da Fase 3", () => {
   })
 })
 
+describe("evolução: Fase 4", () => {
+  it("últimos valores: personal do aluno, dono da aula (reposição) e admin; outros não", async () => {
+    ok(await ana.rpc("last_measurement", { p_student_id: alunoAna }))
+    const guestNoSession = await ana.rpc("last_measurement", { p_student_id: alunoBruno })
+    expect(guestNoSession.error).not.toBeNull()
+    const guestInClass = ok(await ana.rpc("last_measurement", { p_student_id: alunoBruno, p_session_id: sessionAna }))
+    expect(guestInClass).toHaveLength(1)
+    const other = await bruno.rpc("last_measurement", { p_student_id: alunoAna })
+    expect(other.error).not.toBeNull()
+    ok(await gabriel.rpc("last_measurement", { p_student_id: alunoBruno }))
+  })
+
+  it("reenvio offline: a mesma medição enviada duas vezes vira uma só", async () => {
+    const clientId = crypto.randomUUID()
+    const row = { client_id: clientId, student_id: alunoAna, weight_kg: 70.5 }
+    for (let i = 0; i < 2; i++) {
+      const res = await ana.from("measurements").upsert(row, { onConflict: "client_id", ignoreDuplicates: true })
+      expect(res.error).toBeNull()
+    }
+    const rows = ok(await svc.from("measurements").select("id").eq("client_id", clientId))
+    expect(rows).toHaveLength(1)
+  })
+
+  it("personal não mede aluno de outro personal fora da própria aula", async () => {
+    const res = await bruno.from("measurements").insert({ client_id: crypto.randomUUID(), student_id: alunoAna, weight_kg: 70 })
+    expect(res.error).not.toBeNull()
+  })
+})
+
 describe("ativação e acesso", () => {
   it("aluno com 'sim' no PAR-Q só é ativado depois da liberação médica", async () => {
     const id = await createStudent("Precisa liberação", brunoId, "aguardando")

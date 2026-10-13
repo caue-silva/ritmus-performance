@@ -7,13 +7,13 @@ import { test, type Page } from "@playwright/test"
 import { generateToken, hashToken } from "../../src/lib/tokens"
 import { login, PASSWORD, service, USERS, VIEWPORTS } from "./support"
 
-const PHASE = process.env.PRINTS_PHASE ?? "fase-3"
+const PHASE = process.env.PRINTS_PHASE ?? "fase-4"
 const TAG = `print${Date.now().toString(36)}`
 
 async function shoot(page: Page, name: string, opts: { dark?: boolean; full?: boolean } = {}) {
   for (const vp of VIEWPORTS) {
     await page.setViewportSize({ width: vp.width, height: vp.height })
-    await page.waitForTimeout(300)
+    await page.waitForTimeout(700) // gráficos se redimensionam depois do resize
     await page.screenshot({ path: `prints/${PHASE}/${name}-${vp.name}${opts.dark ? "-escuro" : ""}.png`, fullPage: opts.full ?? true })
   }
 }
@@ -212,4 +212,53 @@ test("agenda", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 })
   await page.getByRole("button", { name: "Mudar horários" }).click()
   await one(page, "admin-aluno-mudar-horarios")
+})
+
+test("evolução", async ({ page, context }) => {
+  const db = service()
+  const d = new Date(new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) + "T12:00:00Z")
+  while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d.setUTCDate(d.getUTCDate() - 1)
+  const { data: ana } = await db.from("profiles").select("id").eq("email", USERS.personal).single()
+  const { data: session } = await db
+    .from("class_sessions")
+    .select("id")
+    .eq("personal_id", ana!.id)
+    .eq("date", d.toISOString().slice(0, 10))
+    .eq("start_time", "09:00:00")
+    .single()
+
+  await login(page, USERS.personal)
+  await page.goto(`/agenda/aula/${session!.id}`)
+  await shoot(page, "personal-aula")
+  await page.setViewportSize({ width: 375, height: 812 })
+  const row = page.getByRole("list", { name: "Alunos do horário" }).getByRole("listitem").first()
+  await row.getByRole("button", { name: /Registrar medição/ }).click()
+  await page.getByRole("dialog").getByLabel("Peso").fill("71,4")
+  await page.waitForTimeout(400)
+  await one(page, "personal-medicao")
+  await page.keyboard.press("Escape")
+
+  // Sem internet: medição pendente
+  await context.setOffline(true)
+  await row.getByRole("button", { name: /Registrar medição/ }).click()
+  await page.getByRole("dialog").getByLabel("Peso").fill("71,3")
+  await page.getByRole("dialog").getByRole("button", { name: "Salvar medição" }).click()
+  await page.getByText(/Sem internet/).waitFor()
+  await one(page, "personal-medicao-pendente")
+  await page.getByRole("button", { name: /pendente/ }).click()
+  await one(page, "personal-medicao-pendente-lista")
+  await page.keyboard.press("Escape")
+  await context.setOffline(false)
+  await page.getByText("Medição pendente enviada.").waitFor({ timeout: 15000 })
+  await db.from("measurements").delete().eq("weight_kg", 71.3).gte("created_at", new Date(Date.now() - 300_000).toISOString())
+
+  const diego = await studentId("Diego Carvalho")
+  await page.goto(`/alunos/${diego}?aba=evolucao`)
+  await shoot(page, "personal-evolucao")
+  await page.goto(`/alunos/${diego}?aba=presenca`)
+  await shoot(page, "personal-presenca")
+  await page.emulateMedia({ colorScheme: "dark" })
+  await page.goto(`/alunos/${diego}?aba=evolucao`)
+  await shoot(page, "personal-evolucao", { dark: true })
+  await page.emulateMedia({ colorScheme: "light" })
 })

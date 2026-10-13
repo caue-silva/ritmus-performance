@@ -29,7 +29,7 @@ test("personal: check-in com Desfazer, falta libera vaga, reposição e cancelar
 
   const list = page.getByRole("list", { name: "Alunos do horário" })
   const first = list.getByRole("listitem").first()
-  const checkIn = first.getByRole("button", { name: /Check-in|Chegou/ })
+  const checkIn = first.getByRole("button", { name: /check-in/i })
   const wasPresent = (await checkIn.getAttribute("aria-pressed")) === "true"
   if (wasPresent) {
     await checkIn.click()

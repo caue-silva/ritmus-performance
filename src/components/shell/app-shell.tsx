@@ -3,6 +3,8 @@ import Link from "next/link"
 import { Logo } from "@/components/brand/logo"
 import type { Staff } from "@/lib/auth"
 
+import { PendingSync } from "@/features/evolucao/components/pending-sync"
+
 import { AccountMenu } from "./account-menu"
 import { BottomNav } from "./bottom-nav"
 import { SideRail } from "./side-rail"
@@ -24,6 +26,7 @@ export function AppShell({ staff, taskCount = 0, children }: { staff: Staff; tas
               <StudentSearch variant="bar" />
             </div>
             <div className="ml-auto flex items-center gap-1">
+              <PendingSync />
               <div className="md:hidden">
                 <StudentSearch variant="icon" />
               </div>

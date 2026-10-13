@@ -1,6 +1,6 @@
 "use client"
 
-import { Ban, Check, ChevronRight, HeartPulse, RotateCcw, UserPlus, UserRound } from "lucide-react"
+import { Ban, Check, CloudOff, HeartPulse, MoreVertical, RotateCcw, UserPlus, UserRound } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
@@ -11,10 +11,13 @@ import { toastWithUndo } from "@/components/feedback/undo-toast"
 import { TextField } from "@/components/form/fields"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { addMinutes, formatDayShort } from "@/lib/dates"
+import { addMinutes, formatDayShort, todaySP } from "@/lib/dates"
 import { firstName, formatHour, initials } from "@/lib/format"
 import type { Enums } from "@/lib/supabase/database.types"
 import { cn } from "@/lib/utils"
+
+import { MeasurementSheet } from "@/features/evolucao/components/measurement-sheet"
+import { usePendingMeasurements } from "@/features/evolucao/offline-queue"
 
 import { removeMakeup, setAttendanceStatus, setSessionCanceled } from "../actions"
 import type { RosterEntry, SessionSummary } from "../queries"
@@ -48,6 +51,8 @@ export function SessionView({
   const [overrides, setOverrides] = useState<Record<string, Status>>({})
   const [removed, setRemoved] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<RosterEntry | null>(null)
+  const [measuring, setMeasuring] = useState<RosterEntry | null>(null)
+  const pendingMeasurements = usePendingMeasurements()
   const [makeupOpen, setMakeupOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [, start] = useTransition()
@@ -143,67 +148,97 @@ export function SessionView({
           {canManage && isNormal && " Toque em “Adicionar reposição” para encaixar alguém."}
         </div>
       ) : (
+        <>
+        {canManage && isNormal && !isFuture && (
+          <p className="-mb-3 text-sm text-muted-foreground">Toque no nome do aluno para registrar a medição.</p>
+        )}
         <ul className="grid gap-2" aria-label="Alunos do horário">
-          {entries.map((e) => (
-            <li
-              key={e.attendance_id}
-              className={cn(
-                "flex items-center gap-2 rounded-xl border bg-card p-2 pl-3 transition-colors",
-                e.status === "presente" ? "border-success/40" : "border-border",
-                (e.status === "falta" || e.status === "falta_justificada") && "opacity-70",
-              )}
-            >
-              <button
-                type="button"
-                onClick={() => setSelected(e)}
-                disabled={!canManage}
-                className="flex min-h-tap-lg min-w-0 flex-1 items-center gap-3 text-left"
-                aria-label={`${e.full_name}: ${STATUS_LABEL[e.status]}. Mais opções`}
+          {entries.map((e) => {
+            const pendingHere = pendingMeasurements.some((m) => m.student_id === e.student_id && m.state === "pendente")
+            const measuredToday = !!e.last_measured_at && todaySP(new Date(e.last_measured_at)) === today
+            const absent = e.status === "falta" || e.status === "falta_justificada"
+            return (
+              <li
+                key={e.attendance_id}
+                className={cn(
+                  "flex items-center gap-1 rounded-xl border bg-card p-1.5 pl-3 transition-colors",
+                  e.status === "presente" ? "border-success/40" : "border-border",
+                  absent && "opacity-70",
+                )}
               >
-                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-secondary text-sm font-bold">
-                  {initials(e.full_name)}
-                </span>
-                <span className="grid min-w-0">
-                  <span className="flex items-center gap-1.5 truncate font-semibold">
-                    {e.full_name}
-                    {e.health_flag && <HeartPulse className="size-4 shrink-0 text-warning" aria-label="Tem observação de saúde" />}
-                  </span>
-                  <span className="truncate text-sm text-muted-foreground">
-                    {e.kind === "reposicao" ? `Reposição${e.is_mine ? "" : e.owner_name ? ` · aluno de ${firstName(e.owner_name)}` : ""}` : null}
-                    {e.kind === "reposicao" && e.status !== "previsto" ? " · " : ""}
-                    {e.kind === "fixo" || e.status !== "previsto" ? STATUS_LABEL[e.status] : null}
-                  </span>
-                </span>
-              </button>
-              {canManage && isNormal && !isFuture && (e.status === "previsto" || e.status === "presente") && (
                 <button
                   type="button"
-                  aria-pressed={e.status === "presente"}
-                  onClick={() =>
-                    e.status === "presente"
-                      ? changeStatus(e, "previsto", `Check-in de ${firstName(e.full_name)} desfeito.`)
-                      : changeStatus(e, "presente", `${firstName(e.full_name)} chegou.`)
-                  }
-                  className={cn(
-                    "flex h-tap-lg w-28 shrink-0 items-center justify-center gap-1.5 rounded-lg font-semibold transition-colors",
-                    e.status === "presente"
-                      ? "bg-success text-success-foreground"
-                      : "border-2 border-foreground bg-background hover:bg-foreground hover:text-background",
-                  )}
+                  onClick={() => setMeasuring(e)}
+                  disabled={!canManage || !isNormal || isFuture || absent}
+                  className="flex min-h-tap-lg min-w-0 flex-1 items-center gap-3 text-left disabled:cursor-default"
+                  aria-label={`${e.full_name}: ${STATUS_LABEL[e.status]}. Registrar medição`}
                 >
-                  {e.status === "presente" ? (
-                    <>
-                      <Check className="size-5" aria-hidden /> Chegou
-                    </>
-                  ) : (
-                    "Check-in"
-                  )}
+                  <span className="hidden size-10 shrink-0 place-items-center rounded-full bg-secondary text-sm font-bold min-[400px]:grid">
+                    {initials(e.full_name)}
+                  </span>
+                  <span className="grid min-w-0">
+                    <span className="flex items-center gap-1.5 leading-tight font-semibold">
+                      <span className="line-clamp-2 break-words">{e.full_name}</span>
+                      {e.health_flag && <HeartPulse className="size-4 shrink-0 text-warning" aria-label="Tem observação de saúde" />}
+                    </span>
+                    <span className="flex items-center gap-1 truncate text-sm text-muted-foreground">
+                      {e.kind === "reposicao" ? `Reposição${e.is_mine ? "" : e.owner_name ? ` · aluno de ${firstName(e.owner_name)}` : ""}` : null}
+                      {e.kind === "reposicao" && (e.status !== "previsto" || pendingHere || measuredToday) ? " · " : ""}
+                      {pendingHere ? (
+                        <span className="inline-flex items-center gap-1 font-medium text-warning">
+                          <CloudOff className="size-3.5" aria-hidden /> Envio pendente
+                        </span>
+                      ) : measuredToday ? (
+                        <span className="inline-flex items-center gap-1 font-medium text-success">
+                          <Check className="size-3.5" aria-hidden /> Medido hoje
+                        </span>
+                      ) : e.kind === "fixo" || e.status !== "previsto" ? (
+                        STATUS_LABEL[e.status]
+                      ) : null}
+                    </span>
+                  </span>
                 </button>
-              )}
-              {canManage && <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />}
-            </li>
-          ))}
+                {canManage && isNormal && !isFuture && (e.status === "previsto" || e.status === "presente") && (
+                  <button
+                    type="button"
+                    aria-pressed={e.status === "presente"}
+                    aria-label={e.status === "presente" ? `${e.full_name} chegou. Desfazer check-in` : `Check-in de ${e.full_name}`}
+                    onClick={() =>
+                      e.status === "presente"
+                        ? changeStatus(e, "previsto", `Check-in de ${firstName(e.full_name)} desfeito.`)
+                        : changeStatus(e, "presente", `${firstName(e.full_name)} chegou.`)
+                    }
+                    className={cn(
+                      "flex h-tap-lg w-24 shrink-0 items-center justify-center gap-1 rounded-lg font-semibold transition-colors sm:w-28",
+                      e.status === "presente"
+                        ? "bg-success text-success-foreground"
+                        : "border-2 border-foreground bg-background hover:bg-foreground hover:text-background",
+                    )}
+                  >
+                    {e.status === "presente" ? (
+                      <>
+                        <Check className="size-5" aria-hidden /> Chegou
+                      </>
+                    ) : (
+                      "Check-in"
+                    )}
+                  </button>
+                )}
+                {canManage && (
+                  <button
+                    type="button"
+                    onClick={() => setSelected(e)}
+                    aria-label={`Mais opções de ${e.full_name}`}
+                    className="grid size-tap shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <MoreVertical className="size-5" aria-hidden />
+                  </button>
+                )}
+              </li>
+            )
+          })}
         </ul>
+        </>
       )}
 
       {/* Ações do horário, na metade de baixo da tela */}
@@ -248,7 +283,21 @@ export function SessionView({
           changeStatus(entry, status, message)
         }}
         onRemove={remove}
+        onMeasure={(e) => {
+          setSelected(null)
+          setMeasuring(e)
+        }}
       />
+
+      {measuring && (
+        <MeasurementSheet
+          student={{ id: measuring.student_id, full_name: measuring.full_name }}
+          sessionId={session.id}
+          canEditHeight={isAdmin || measuring.is_mine}
+          onClose={() => setMeasuring(null)}
+          onSaved={() => router.refresh()}
+        />
+      )}
 
       {makeupOpen && (
         <MakeupSheet sessionId={session.id} onClose={() => setMakeupOpen(false)} onAdded={() => router.refresh()} />
@@ -268,6 +317,7 @@ function StudentSheet({
   onClose,
   onStatus,
   onRemove,
+  onMeasure,
 }: {
   entry: RosterEntry | null
   canSeeProfile: boolean
@@ -276,6 +326,7 @@ function StudentSheet({
   onClose: () => void
   onStatus: (e: RosterEntry, s: Status, message: string) => void
   onRemove: (e: RosterEntry) => void
+  onMeasure: (e: RosterEntry) => void
 }) {
   const option = (label: string, onClick: () => void, opts: { tone?: "danger"; icon?: React.ReactNode } = {}) => (
     <button
@@ -300,6 +351,7 @@ function StudentSheet({
         </SheetHeader>
         {entry && (
           <div className="grid gap-1 p-3">
+            {isNormal && !isFuture && option("Registrar medição", () => onMeasure(entry))}
             {isNormal && entry.status !== "falta" && option("Faltou", () => onStatus(entry, "falta", `Falta de ${name} registrada.`))}
             {isNormal &&
               entry.status !== "falta_justificada" &&

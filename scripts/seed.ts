@@ -354,6 +354,50 @@ async function main() {
   }
   console.log(`✔ Agenda: ${updates.length} presenças passadas, ${makeups} reposições, 3 feriados`)
 
+  // ---------------------------------------------------------------------------
+  // Evolução: uma medição por semana (na primeira aula com presença), 8 semanas
+  // ---------------------------------------------------------------------------
+  const { data: initials } = await db.from("measurements").select("student_id, weight_kg").eq("source", "cadastro")
+  const { data: presences } = await db
+    .from("attendances")
+    .select("student_id, session_id, class_sessions!inner(date, start_time, personal_id), students!inner(status, goals)")
+    .eq("status", "presente")
+    .eq("kind", "fixo")
+    .eq("students.status", "ativo")
+    .order("session_id")
+  const rows: TablesInsert<"measurements">[] = []
+  const seenWeek = new Set<string>()
+  const sorted = [...(presences ?? [])].sort((a, b) =>
+    (a.class_sessions as unknown as { date: string }).date.localeCompare((b.class_sessions as unknown as { date: string }).date),
+  )
+  const start = new Map<string, string>()
+  for (const p of sorted) {
+    const cs = p.class_sessions as unknown as { date: string; start_time: string; personal_id: string }
+    const week = `${p.student_id}:${Math.floor((Date.parse(cs.date) - Date.parse(from)) / (7 * 86_400_000))}`
+    if (seenWeek.has(week)) continue
+    seenWeek.add(week)
+    if (!start.has(p.student_id)) start.set(p.student_id, cs.date)
+    const weeks = (Date.parse(cs.date) - Date.parse(start.get(p.student_id)!)) / (7 * 86_400_000)
+    const base = Number(initials?.find((m) => m.student_id === p.student_id)?.weight_kg ?? 75)
+    const gaining = ((p.students as unknown as { goals: string[] }).goals ?? []).includes("Ganhar massa muscular")
+    const noise = (random() - 0.5) * 0.8
+    const weight = base + (gaining ? 0.18 : -0.38) * weeks + noise
+    const waist = 68 + (base - 58) * 0.7 - (gaining ? 0.05 : 0.45) * weeks + (random() - 0.5) * 0.8
+    rows.push({
+      client_id: crypto.randomUUID(),
+      student_id: p.student_id,
+      session_id: p.session_id,
+      measured_at: `${cs.date}T${cs.start_time}-03:00`,
+      weight_kg: Math.round(weight * 10) / 10,
+      waist_cm: Math.round(waist * 10) / 10,
+      abdomen_cm: Math.round((waist + 4 + (random() - 0.5)) * 10) / 10,
+      created_by: cs.personal_id,
+      source: "aula",
+    })
+  }
+  for (let i = 0; i < rows.length; i += 200) must(await db.from("measurements").insert(rows.slice(i, i + 200)))
+  console.log(`✔ Evolução: ${rows.length} medições semanais`)
+
   // Pré-cadastro com link enviado (formulário ainda não preenchido)
   const invited = must(
     await db

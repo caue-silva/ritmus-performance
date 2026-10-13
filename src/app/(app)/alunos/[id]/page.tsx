@@ -8,8 +8,11 @@ import { Button } from "@/components/ui/button"
 import { FeeEditor, ScheduleEditor, StatusActions, StudentPrimaryAction } from "@/features/alunos/components/student-actions"
 import { getActivationOptions, getStudentDetail } from "@/features/alunos/queries"
 import { PARQ_QUESTIONS } from "@/features/cadastro/parq"
+import { AttendancePanel } from "@/features/evolucao/components/attendance-panel"
+import { EvolutionPanel } from "@/features/evolucao/components/evolution-panel"
+import { getAttendance, getMeasurements } from "@/features/evolucao/queries"
 import { requireStaff } from "@/lib/auth"
-import { todaySP } from "@/lib/dates"
+import { addDays, todaySP } from "@/lib/dates"
 import { formatCPF, formatDate, formatPhone, summarizeSchedule } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { ageOn } from "@/lib/validation"
@@ -50,9 +53,11 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
   )
 }
 
-export default async function AlunoPage({ params }: PageProps<"/alunos/[id]">) {
+export default async function AlunoPage({ params, searchParams }: PageProps<"/alunos/[id]">) {
   const staff = await requireStaff()
   const { id } = await params
+  const { aba } = await searchParams
+  const tab: "resumo" | "evolucao" | "presenca" = aba === "evolucao" || aba === "presenca" ? aba : "resumo"
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound()
 
   const isAdmin = staff.role === "admin"
@@ -60,11 +65,18 @@ export default async function AlunoPage({ params }: PageProps<"/alunos/[id]">) {
   // Aluno de outro personal: o RLS não devolve nada → "não encontrado".
   if (!detail) notFound()
   const { student: s, health, billing, enrollments, initialWeight } = detail
+  const hasHistory = s.status === "ativo" || s.status === "pausado" || s.status === "inativo"
+  const today = todaySP()
+  const canEdit = isAdmin || s.personal_id === staff.id
+  const [points, attendance] = await Promise.all([
+    hasHistory && tab === "evolucao" ? getMeasurements(s.id) : null,
+    hasHistory && tab === "presenca" ? getAttendance(s.id, addDays(today, -200)) : null,
+  ])
 
   const yesAnswers = health?.parq_answers.map((a, i) => (a ? i : -1)).filter((i) => i >= 0) ?? []
   const needsClearance = !!health?.requires_clearance && !health.clearance_received_on
   const hasHealthNote = yesAnswers.length > 0 || !!health?.health_notes
-  const age = s.birth_date ? ageOn(s.birth_date, todaySP()) : null
+  const age = s.birth_date ? ageOn(s.birth_date, today) : null
   const target = {
     id: s.id,
     full_name: s.full_name,
@@ -140,7 +152,40 @@ export default async function AlunoPage({ params }: PageProps<"/alunos/[id]">) {
         )}
       </div>
 
-      {s.status === "convidado" ? (
+      {hasHistory && (
+        <nav aria-label="Seções do aluno" className="-mx-4 flex gap-1 overflow-x-auto border-b border-border px-4 md:mx-0 md:px-0">
+          {([
+            ["resumo", "Resumo"],
+            ["evolucao", "Evolução"],
+            ["presenca", "Presença"],
+          ] as const).map(([key, label]) => (
+            <Link
+              key={key}
+              href={key === "resumo" ? `/alunos/${s.id}` : `/alunos/${s.id}?aba=${key}`}
+              aria-current={tab === key ? "page" : undefined}
+              className={cn(
+                "-mb-px flex min-h-tap shrink-0 items-center border-b-2 px-4 font-semibold transition-colors",
+                tab === key ? "border-brand text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+      )}
+
+      {tab === "evolucao" && points ? (
+        <EvolutionPanel
+          student={{ id: s.id, full_name: s.full_name }}
+          points={points}
+          today={today}
+          canMeasure={canEdit && s.status === "ativo"}
+          canEditHeight={canEdit}
+          canDelete={isAdmin}
+        />
+      ) : tab === "presenca" && attendance ? (
+        <AttendancePanel rows={attendance} today={today} />
+      ) : s.status === "convidado" ? (
         <Section title="Cadastro">
           <p className="text-muted-foreground">
             {detail.invite && new Date(detail.invite.expires_at) > new Date()

@@ -225,6 +225,17 @@ export async function setStudentSchedule(studentId: string, slotIds: string[]): 
   return { ok: true, data: undefined }
 }
 
+/** Atualiza só a altura (usada no IMC). Personal do aluno ou admin; o RLS decide. */
+export async function updateStudentHeight(studentId: string, heightCm: number): Promise<ActionResult> {
+  await requireStaff()
+  if (!(heightCm >= 100 && heightCm <= 250)) return fail("Altura entre 1,00 m e 2,50 m.")
+  const supabase = await createClient()
+  const { data, error } = await supabase.from("students").update({ height_cm: heightCm }).eq("id", studentId).select("id")
+  if (error || !data?.length) return fail("Não deu para salvar a altura agora.")
+  refresh(studentId)
+  return { ok: true, data: undefined }
+}
+
 export async function releaseStudent(studentId: string, status: "pausado" | "inativo"): Promise<ActionResult> {
   await requireAdmin()
   const supabase = await createClient()

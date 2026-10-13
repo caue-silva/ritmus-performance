@@ -553,6 +553,11 @@ isOneToOne: false
 "ensure_sessions":
 { Args: { "p_from": string,"p_to": string }; Returns: undefined
                            },
+"last_measurement":
+{ Args: { "p_session_id"?: string,"p_student_id": string }; Returns: {
+              "abdomen_cm": number,"height_cm": number,"measured_at": string,"waist_cm": number,"weight_kg": number
+            }[]
+                           },
 "release_student":
 { Args: { "p_status": Database["public"]['Enums']["student_status"],"p_student_id": string }; Returns: undefined
                            },
@@ -568,7 +573,7 @@ isOneToOne: false
                            },
 "session_roster":
 { Args: { "p_session_id": string }; Returns: {
-              "attendance_id": string,"checked_in_at": string,"created_at": string,"created_by_name": string,"full_name": string,"health_flag": boolean,"is_mine": boolean,"kind": Database["public"]['Enums']["attendance_kind"],"owner_name": string,"status": Database["public"]['Enums']["attendance_status"],"student_id": string
+              "attendance_id": string,"checked_in_at": string,"created_at": string,"created_by_name": string,"full_name": string,"health_flag": boolean,"is_mine": boolean,"kind": Database["public"]['Enums']["attendance_kind"],"last_measured_at": string,"owner_name": string,"status": Database["public"]['Enums']["attendance_status"],"student_id": string
             }[]
                            },
 "set_student_schedule":

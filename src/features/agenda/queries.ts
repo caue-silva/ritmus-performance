@@ -30,6 +30,7 @@ export type RosterEntry = {
   health_flag: boolean
   created_by_name: string | null
   created_at: string
+  last_measured_at: string | null
 }
 
 export async function getClassDuration() {
