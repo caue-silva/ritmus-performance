@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation"
 import { z } from "zod"
 
+import { fieldErrors } from "@/lib/form-errors"
+
 import { getStaff, homePath } from "@/lib/auth"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
@@ -23,11 +25,14 @@ const loginSchema = z.object({
 export async function signIn(_: FormState, formData: FormData): Promise<FormState> {
   const parsed = loginSchema.safeParse({ email: formData.get("email"), password: formData.get("password") })
   if (!parsed.success) {
-    return { fieldErrors: Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0]), i.message])) }
+    return { fieldErrors: fieldErrors(parsed.error) }
   }
 
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword(parsed.data)
+  if (error?.code === "user_banned") {
+    return { error: "Sua conta está desativada. Fale com o Gabriel para liberar o acesso." }
+  }
   if (error) {
     const wrong = error.code === "invalid_credentials" || error.status === 400
     return {
@@ -57,7 +62,7 @@ const passwordSchema = z
 export async function changePassword(_: FormState, formData: FormData): Promise<FormState> {
   const parsed = passwordSchema.safeParse({ password: formData.get("password"), confirm: formData.get("confirm") })
   if (!parsed.success) {
-    return { fieldErrors: Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0]), i.message])) }
+    return { fieldErrors: fieldErrors(parsed.error) }
   }
 
   const staff = await getStaff()

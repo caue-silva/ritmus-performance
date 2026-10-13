@@ -1,47 +1,102 @@
 /**
  * Prints de revisão (não são testes de regressão). Saída: prints/<fase>/<tela>-<largura>[-escuro].png
- * Fase atual em PRINTS_PHASE (padrão: fase-1).
+ * Fase em PRINTS_PHASE (padrão: atual). Requer seed: npm run db:reset
  */
 import { test, type Page } from "@playwright/test"
 
+import { generateToken, hashToken } from "../../src/lib/tokens"
 import { login, PASSWORD, service, USERS, VIEWPORTS } from "./support"
 
-const PHASE = process.env.PRINTS_PHASE ?? "fase-1"
+const PHASE = process.env.PRINTS_PHASE ?? "fase-2"
+const TAG = `print${Date.now().toString(36)}`
 
-async function shoot(page: Page, name: string, opts: { dark?: boolean } = {}) {
+async function shoot(page: Page, name: string, opts: { dark?: boolean; full?: boolean } = {}) {
   for (const vp of VIEWPORTS) {
     await page.setViewportSize({ width: vp.width, height: vp.height })
-    await page.waitForTimeout(250)
-    await page.screenshot({
-      path: `prints/${PHASE}/${name}-${vp.name}${opts.dark ? "-escuro" : ""}.png`,
-      fullPage: true,
-    })
+    await page.waitForTimeout(300)
+    await page.screenshot({ path: `prints/${PHASE}/${name}-${vp.name}${opts.dark ? "-escuro" : ""}.png`, fullPage: opts.full ?? true })
   }
+}
+
+async function one(page: Page, name: string, width = 375, height = 812) {
+  await page.setViewportSize({ width, height })
+  await page.waitForTimeout(350)
+  await page.screenshot({ path: `prints/${PHASE}/${name}.png` })
+}
+
+const studentId = async (name: string) => {
+  const { data } = await service().from("students").select("id").eq("full_name", name).single()
+  return data!.id as string
 }
 
 test.describe.configure({ mode: "serial" })
 
+test.afterAll(async () => {
+  const db = service()
+  await db.from("students").delete().like("full_name", `%${TAG}%`)
+  const { data } = await db.auth.admin.listUsers({ perPage: 200 })
+  for (const u of data?.users ?? []) if (u.email?.includes(TAG)) await db.auth.admin.deleteUser(u.id)
+})
+
 test("login e primeiro acesso", async ({ page }) => {
   await page.goto("/login")
   await shoot(page, "login")
-
-  await page.getByRole("button", { name: "Entrar" }).click()
-  await page.getByText("Digite um e-mail válido.").waitFor()
-  await page.setViewportSize({ width: 375, height: 812 })
-  await page.screenshot({ path: `prints/${PHASE}/login-erro-375.png`, fullPage: true })
-
-  // Conta nova com senha temporária → troca obrigatória.
   const db = service()
-  const email = `novo-${Date.now()}@ritmus.test`
+  const email = `novo.${TAG}@ritmus.test`
   const { data } = await db.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true })
   await db.from("profiles").insert({ id: data.user!.id, email, full_name: "Carla Mendes", role: "personal" })
-  try {
-    await login(page, email)
-    await page.waitForURL("**/primeiro-acesso")
-    await shoot(page, "primeiro-acesso")
-  } finally {
-    await db.auth.admin.deleteUser(data.user!.id)
-  }
+  await login(page, email)
+  await page.waitForURL("**/primeiro-acesso")
+  await shoot(page, "primeiro-acesso")
+})
+
+test("formulário público de cadastro", async ({ page }) => {
+  const db = service()
+  const { data: s } = await db.from("students").insert({ full_name: `Paula Souza ${TAG}`, whatsapp: "15998887777", status: "convidado" }).select("id").single()
+  const token = generateToken()
+  await db.from("student_invites").insert({ student_id: s!.id, token_hash: hashToken(token) })
+  await page.route("https://viacep.com.br/ws/**", (r) =>
+    r.fulfill({ json: { logradouro: "Rua Sete de Setembro", bairro: "Centro", localidade: "Pilar do Sul", uf: "SP" } }),
+  )
+
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto(`/cadastro/${token}`, { waitUntil: "networkidle" })
+  await shoot(page, "cadastro-1-dados", { full: false })
+  await page.getByRole("button", { name: /Continuar/ }).click()
+  await one(page, "cadastro-1-erros")
+  await page.getByLabel("CPF").fill("52998224725")
+  await page.getByLabel("Data de nascimento").fill("25041990")
+  await page.getByRole("button", { name: /Continuar/ }).click()
+  await page.getByLabel("CEP").fill("18185000")
+  await page.getByLabel("Número").fill("120")
+  await one(page, "cadastro-2-endereco")
+  await page.getByRole("button", { name: /Continuar/ }).click()
+  await page.getByLabel("Nome").fill("Marcos Souza")
+  await page.getByLabel("Telefone").fill("15997776666")
+  await page.getByLabel("Quem é").fill("Irmão")
+  await page.getByRole("button", { name: /Continuar/ }).click()
+  await page.getByRole("button", { name: "Emagrecer" }).click()
+  await page.getByRole("button", { name: "Condicionamento" }).click()
+  await page.getByLabel("Altura").fill("1,68")
+  await page.getByLabel("Peso").fill("70,5")
+  await one(page, "cadastro-4-objetivos")
+  await page.getByRole("button", { name: /Continuar/ }).click()
+  await page.getByRole("button", { name: "Dia 10" }).click()
+  await one(page, "cadastro-5-mensalidade")
+  await page.getByRole("button", { name: /Continuar/ }).click()
+  const groups = page.getByRole("radiogroup")
+  for (let i = 0; i < 7; i++) await groups.nth(i).getByRole("radio", { name: i === 4 ? "Sim" : "Não" }).click()
+  await shoot(page, "cadastro-6-saude")
+  await page.getByText("Li e concordo com a declaração acima.").click()
+  await page.getByRole("button", { name: /Continuar/ }).click()
+  await shoot(page, "cadastro-7-termos", { full: false })
+  await page.getByText("Li e aceito os termos de uso.").click()
+  await page.getByText("Autorizo o uso dos meus dados").click()
+  await page.getByRole("button", { name: "Enviar cadastro" }).click()
+  await page.getByRole("heading", { name: "Cadastro enviado!" }).waitFor()
+  await shoot(page, "cadastro-enviado")
+  await page.goto(`/cadastro/${"x".repeat(43)}`)
+  await one(page, "cadastro-link-invalido")
 })
 
 test("admin", async ({ page }) => {
@@ -49,52 +104,68 @@ test("admin", async ({ page }) => {
   await page.waitForURL("**/tarefas")
   await shoot(page, "admin-tarefas")
 
+  // Painéis de ação da Central de tarefas
+  await page.setViewportSize({ width: 375, height: 812 })
+  const paula = page.getByRole("article").filter({ hasText: "Paula Souza" })
+  await paula.getByRole("button", { name: "Registrar liberação" }).click()
+  await one(page, "admin-tarefa-liberacao")
+  await page.keyboard.press("Escape")
+  await page.getByRole("article").filter({ hasText: "Tatiane" }).getByRole("button", { name: "Ativar" }).click()
+  const sheet = page.getByRole("dialog")
+  await sheet.getByRole("button", { name: "Ana" }).click()
+  await sheet.getByRole("button", { name: "2x", exact: true }).click()
+  await one(page, "admin-tarefa-ativar")
+  await page.setViewportSize({ width: 1024, height: 768 })
+  await page.waitForTimeout(300)
+  await page.screenshot({ path: `prints/${PHASE}/admin-tarefa-ativar-1024.png` })
+  await page.keyboard.press("Escape")
+  await page.getByRole("article").filter({ hasText: "Marcelo" }).first().getByRole("button", { name: "Definir valor" }).click()
+  await one(page, "admin-tarefa-valor")
+  await page.keyboard.press("Escape")
+
   await page.goto("/alunos")
   await shoot(page, "admin-alunos")
-  await page.getByRole("link", { name: /Mariana/ }).click()
-  await page.waitForURL("**/alunos/*")
-  await shoot(page, "admin-aluno")
+  await page.goto(`/alunos/${await studentId("Diego Carvalho")}`)
+  await shoot(page, "admin-aluno-ficha")
+  await page.goto(`/alunos/${await studentId("Leandro Martins")}`)
+  await shoot(page, "admin-aluno-aguardando")
+  await page.goto(`/alunos/${await studentId("Carolina Dias")}`)
+  await shoot(page, "admin-aluno-convidado")
+  await page.goto(`/alunos/${await studentId("Diego Carvalho")}/editar`)
+  await shoot(page, "admin-aluno-editar", { full: false })
 
-  await page.goto("/mais")
-  await shoot(page, "admin-mais")
-  await page.goto("/financeiro")
-  await shoot(page, "admin-financeiro")
-
-  // Busca aberta (celular e computador).
-  await page.goto("/tarefas")
+  await page.goto("/alunos/novo")
+  await shoot(page, "admin-novo-aluno")
   await page.setViewportSize({ width: 375, height: 812 })
-  await page.getByRole("button", { name: "Buscar aluno" }).click()
-  await page.getByPlaceholder("Nome ou telefone do aluno").fill("patri")
-  await page.getByText("Patrícia").first().waitFor()
-  await page.screenshot({ path: `prints/${PHASE}/busca-375.png` })
-  await page.keyboard.press("Escape")
-  await page.setViewportSize({ width: 1024, height: 768 })
-  await page.keyboard.press("/")
-  await page.getByPlaceholder("Nome ou telefone do aluno").fill("lu")
-  await page.waitForTimeout(600)
-  await page.screenshot({ path: `prints/${PHASE}/busca-1024.png` })
+  await page.getByLabel("Nome completo").fill(`Renata Lima ${TAG}`)
+  await page.getByLabel("WhatsApp").fill("15994443333")
+  await page.getByRole("button", { name: "Criar e gerar link" }).click()
+  await page.getByText("Link pronto").waitFor()
+  await one(page, "admin-novo-aluno-link")
+
+  await page.goto("/equipe")
+  await shoot(page, "admin-equipe")
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.getByRole("button", { name: "Novo personal" }).click()
+  await one(page, "admin-equipe-novo")
   await page.keyboard.press("Escape")
 
-  await page.goto("/conta")
-  await shoot(page, "admin-conta")
+  await page.goto("/configuracoes")
+  await shoot(page, "admin-configuracoes")
 
   await page.emulateMedia({ colorScheme: "dark" })
-  await page.goto("/alunos")
-  await shoot(page, "admin-alunos", { dark: true })
   await page.goto("/tarefas")
   await shoot(page, "admin-tarefas", { dark: true })
+  await page.goto(`/alunos/${await studentId("Diego Carvalho")}`)
+  await shoot(page, "admin-aluno-ficha", { dark: true })
   await page.emulateMedia({ colorScheme: "light" })
 })
 
 test("personal", async ({ page }) => {
   await login(page, USERS.personal)
   await page.waitForURL("**/agora")
-  await shoot(page, "personal-agora")
   await page.goto("/alunos")
   await shoot(page, "personal-alunos")
-  await page.goto("/conta")
-  await shoot(page, "personal-conta")
-  // Tentar abrir o financeiro manda de volta para "Agora".
-  await page.goto("/financeiro")
-  await page.waitForURL("**/agora")
+  await page.goto(`/alunos/${await studentId("Diego Carvalho")}`)
+  await shoot(page, "personal-aluno-ficha")
 })

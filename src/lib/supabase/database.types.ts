@@ -151,6 +151,12 @@ isOneToOne: false
       foreignKeyName: "class_sessions_time_slot_id_fkey"
       columns: ["time_slot_id"]
 isOneToOne: false
+      referencedRelation: "time_slot_occupancy"
+      referencedColumns: ["time_slot_id"]
+    },{
+      foreignKeyName: "class_sessions_time_slot_id_fkey"
+      columns: ["time_slot_id"]
+isOneToOne: false
       referencedRelation: "time_slots"
       referencedColumns: ["id"]
     },{
@@ -241,6 +247,12 @@ isOneToOne: false
       foreignKeyName: "enrollments_time_slot_id_fkey"
       columns: ["time_slot_id"]
 isOneToOne: false
+      referencedRelation: "time_slot_occupancy"
+      referencedColumns: ["time_slot_id"]
+    },{
+      foreignKeyName: "enrollments_time_slot_id_fkey"
+      columns: ["time_slot_id"]
+isOneToOne: false
       referencedRelation: "time_slots"
       referencedColumns: ["id"]
     }
@@ -267,14 +279,14 @@ isOneToOne: false
                   ]
                 },"measurements": {
                   Row: {
-                    "abdomen_cm": number | null,"bmi": number | null,"client_id": string,"created_at": string,"created_by": string,"height_cm": number | null,"id": string,"measured_at": string,"notes": string | null,"session_id": string | null,"student_id": string,"waist_cm": number | null,"weight_kg": number | null
+                    "abdomen_cm": number | null,"bmi": number | null,"client_id": string,"created_at": string,"created_by": string | null,"height_cm": number | null,"id": string,"measured_at": string,"notes": string | null,"session_id": string | null,"source": string,"student_id": string,"waist_cm": number | null,"weight_kg": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "abdomen_cm"?: number | null,"bmi"?: never,"client_id": string,"created_at"?: string,"created_by"?: string,"height_cm"?: number | null,"id"?: string,"measured_at"?: string,"notes"?: string | null,"session_id"?: string | null,"student_id": string,"waist_cm"?: number | null,"weight_kg"?: number | null
+                    "abdomen_cm"?: number | null,"bmi"?: never,"client_id": string,"created_at"?: string,"created_by"?: string | null,"height_cm"?: number | null,"id"?: string,"measured_at"?: string,"notes"?: string | null,"session_id"?: string | null,"source"?: string,"student_id": string,"waist_cm"?: number | null,"weight_kg"?: number | null
                   }
                   Update: {
-                    "abdomen_cm"?: number | null,"bmi"?: never,"client_id"?: string,"created_at"?: string,"created_by"?: string,"height_cm"?: number | null,"id"?: string,"measured_at"?: string,"notes"?: string | null,"session_id"?: string | null,"student_id"?: string,"waist_cm"?: number | null,"weight_kg"?: number | null
+                    "abdomen_cm"?: number | null,"bmi"?: never,"client_id"?: string,"created_at"?: string,"created_by"?: string | null,"height_cm"?: number | null,"id"?: string,"measured_at"?: string,"notes"?: string | null,"session_id"?: string | null,"source"?: string,"student_id"?: string,"waist_cm"?: number | null,"weight_kg"?: number | null
                   }
                   Relationships: [
                     {
@@ -464,7 +476,15 @@ isOneToOne: false
                 }
           }
           Views: {
-            "current_legal_documents": {
+            "admin_tasks": {
+                  Row: {
+                    "amount_cents": number | null,"charge_id": string | null,"full_name": string | null,"kind": string | null,"priority": number | null,"ref_date": string | null,"student_id": string | null,"whatsapp": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"current_legal_documents": {
                   Row: {
                     "body": string | null,"created_at": string | null,"id": string | null,"kind": Database["public"]['Enums']["legal_doc_kind"] | null,"version": number | null
                   }
@@ -472,13 +492,36 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"time_slot_occupancy": {
+                  Row: {
+                    "active": boolean | null,"capacity": number | null,"personal_id": string | null,"start_time": string | null,"taken": number | null,"time_slot_id": string | null,"weekday": number | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "time_slots_personal_id_fkey"
+      columns: ["personal_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Functions: {
-            "search_students":
+            "activate_student":
+{ Args: { "p_due_day": number,"p_fee_cents": number,"p_personal_id": string,"p_slot_ids": (string)[],"p_student_id": string,"p_weekly_frequency": number }; Returns: (string)[]
+                           },
+"release_student":
+{ Args: { "p_status": Database["public"]['Enums']["student_status"],"p_student_id": string }; Returns: undefined
+                           },
+"search_students":
 { Args: { "max_results"?: number,"q": string }; Returns: {
               "full_name": string,"id": string,"status": Database["public"]['Enums']["student_status"],"whatsapp": string
             }[]
+                           },
+"submit_signup":
+{ Args: { "p_data": Json,"p_doc_ids": (string)[],"p_ip": unknown,"p_token_hash": string,"p_user_agent": string }; Returns: string
                            }
           }
           Enums: {

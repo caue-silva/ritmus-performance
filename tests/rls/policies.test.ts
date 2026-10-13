@@ -212,6 +212,52 @@ describe("nada financeiro para o personal", () => {
   })
 })
 
+describe("Central de tarefas e funções do admin", () => {
+  it("personal não vê nenhuma tarefa (nem a de aluno sem valor, que é informação financeira)", async () => {
+    // Aluno da Ana, ativo e sem valor → tarefa "valor" para o admin.
+    ok(await svc.from("student_billing").update({ monthly_fee_cents: null }).eq("student_id", alunoAna))
+    const asAdmin = ok(await gabriel.from("admin_tasks").select("kind, student_id").eq("student_id", alunoAna))
+    expect(asAdmin.map((t) => t.kind)).toContain("valor")
+    const asPersonal = ok(await ana.from("admin_tasks").select("kind"))
+    expect(asPersonal).toHaveLength(0)
+    ok(await svc.from("student_billing").update({ monthly_fee_cents: 30000 }).eq("student_id", alunoAna))
+  })
+
+  it("personal não ativa, pausa nem inativa alunos", async () => {
+    const act = await ana.rpc("activate_student", {
+      p_student_id: alunoAna,
+      p_personal_id: anaId,
+      p_weekly_frequency: 2,
+      p_slot_ids: [],
+      p_fee_cents: 1,
+      p_due_day: 10,
+    })
+    expect(act.error?.message).toMatch(/administrador/)
+    const rel = await ana.rpc("release_student", { p_student_id: alunoAna, p_status: "inativo" })
+    expect(rel.error?.message).toMatch(/administrador/)
+  })
+
+  it("o envio do formulário público só roda no servidor", async () => {
+    const args = { p_token_hash: "x", p_data: {}, p_doc_ids: [], p_ip: null, p_user_agent: "" }
+    for (const client of [anon(), ana, gabriel]) {
+      const res = await client.rpc("submit_signup", args as never)
+      expect(res.error).not.toBeNull()
+    }
+  })
+
+  it("personal não lê convites nem consentimentos", async () => {
+    for (const table of ["student_invites", "consents"] as const) {
+      const rows = ok(await ana.from(table).select("*"))
+      expect(rows).toHaveLength(0)
+    }
+  })
+
+  it("ocupação dos horários: personal só vê os próprios", async () => {
+    const rows = ok(await ana.from("time_slot_occupancy").select("personal_id"))
+    expect(rows.every((r) => r.personal_id === anaId)).toBe(true)
+  })
+})
+
 describe("agenda, presença e reposição", () => {
   it("personal só vê as próprias aulas", async () => {
     const rows = ok(await ana.from("class_sessions").select("id").in("id", [sessionAna, sessionBruno]))

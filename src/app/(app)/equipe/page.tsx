@@ -1,18 +1,41 @@
-import { UsersRound } from "lucide-react"
 import type { Metadata } from "next"
 
-import { EmptyState } from "@/components/feedback/empty-state"
 import { PageHeader } from "@/components/shell/page-header"
+import { TeamList } from "@/features/equipe/components/team-list"
 import { requireAdmin } from "@/lib/auth"
+import { summarizeSchedule } from "@/lib/format"
+import { siteUrl } from "@/lib/supabase/env"
+import { createClient } from "@/lib/supabase/server"
+import { generateTempPassword } from "@/lib/tokens"
 
 export const metadata: Metadata = { title: "Equipe" }
 
-export default async function Page() {
-  await requireAdmin()
+export default async function EquipePage() {
+  const me = await requireAdmin()
+  const supabase = await createClient()
+  const [{ data: staff }, { data: students }, { data: slots }] = await Promise.all([
+    supabase.from("profiles").select("*").order("role").order("full_name"),
+    supabase.from("students").select("personal_id").eq("status", "ativo"),
+    supabase.from("time_slots").select("personal_id, weekday, start_time").eq("active", true),
+  ])
+
+  const members = (staff ?? []).map((p) => ({
+    id: p.id,
+    full_name: p.full_name,
+    email: p.email,
+    whatsapp: p.whatsapp,
+    role: p.role,
+    active: p.active,
+    must_change_password: p.must_change_password,
+    isMe: p.id === me.id,
+    activeStudents: (students ?? []).filter((s) => s.personal_id === p.id).length,
+    schedule: summarizeSchedule((slots ?? []).filter((s) => s.personal_id === p.id)),
+  }))
+
   return (
     <>
-      <PageHeader title="Equipe" />
-      <EmptyState icon={UsersRound} title="Equipe em preparação" description="Aqui você vai criar a conta dos personais, redefinir senhas e atribuir horários." />
+      <PageHeader title="Equipe" description="Contas dos personais, acesso e horários de cada um." />
+      <TeamList members={members} suggestedPassword={generateTempPassword()} loginUrl={`${siteUrl()}/login`} />
     </>
   )
 }

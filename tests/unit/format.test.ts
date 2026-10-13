@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { firstName, formatBRL, formatCPF, formatDate, formatPhone, initials } from "@/lib/format"
+import { firstName, formatBRL, formatCPF, formatDate, formatPhone, initials, summarizeSchedule } from "@/lib/format"
 
 describe("formatação pt-BR", () => {
   it("moeda em reais a partir de centavos", () => {
@@ -23,5 +23,14 @@ describe("formatação pt-BR", () => {
   it("nomes", () => {
     expect(firstName("  Gabriel Paiva ")).toBe("Gabriel")
     expect(initials("Ana Maria Souza")).toBe("AS")
+  })
+
+  it("resumo de horários fixos", () => {
+    const week = (time: string) => [1, 2, 3, 4, 5].map((weekday) => ({ weekday, start_time: time }))
+    expect(summarizeSchedule([...week("06:00:00"), ...week("07:00:00"), { weekday: 6, start_time: "08:00:00" }])).toBe(
+      "Seg a Sex às 6h e 7h · Sáb às 8h",
+    )
+    expect(summarizeSchedule([1, 3, 5].map((weekday) => ({ weekday, start_time: "19:30:00" })))).toBe("Seg, Qua e Sex às 19h30")
+    expect(summarizeSchedule([])).toBe("Sem horários fixos")
   })
 })

@@ -1,6 +1,6 @@
 # Ritmus Performance — Plano técnico (item 1 do PEDIDO)
 
-> Status: **aprovado** em 12/10/2026, com as respostas da seção 6. Fase 1 implementada.
+> Status: **aprovado** em 12/10/2026, com as respostas da seção 6. Fases 1 e 2 implementadas.
 
 ---
 
@@ -278,7 +278,7 @@ Cada fase termina com: prints Playwright (375/768/1024) das telas novas → revi
 
 1. **Capacidade:** um único horário por vez no estúdio, com um único personal e no máximo 4 alunos. No banco: índice único de `time_slots (weekday, start_time)` entre os ativos, `class_sessions` única por (`date`, `start_time`) e triggers de capacidade em `enrollments` e `attendances`.
 2. **Ambiente:** Docker na máquina + Supabase CLI (instalado via Homebrew). Contas Supabase/Vercel do Cauê. Repositório: https://github.com/caue-silva/ritmus-performance (público → nenhum segredo no repositório).
-3. **Primeira mensalidade:** mês cheio, "depois de uma semana de aula". Interpretação provisória (confirmar antes da Fase 5): a 1ª cobrança vence 7 dias após a primeira aula; as seguintes seguem o dia de vencimento do aluno.
+3. **Primeira mensalidade:** mês cheio; a 1ª cobrança vence 7 dias após a primeira aula (confirmado); as seguintes seguem o dia de vencimento do aluno.
 4. **Reposição com aluno de outro personal:** o dono do horário **não** vê o aviso de saúde (nem o PAR-Q), mas **pode registrar a medição** do aluno naquela aula (`app.can_measure_in_session`). Ele lê só as medições que ele mesmo registrou.
 5. **Exclusão (LGPD):** anonimizar — apagar os dados pessoais e manter valores/datas para os relatórios (`students.anonymized_at`).
 6. **Aluno pausado:** libera a vaga — as matrículas fixas são encerradas (`enrollments.ends_on`) e as presenças futuras previstas são removidas; ao reativar, escolhem-se os horários de novo.
