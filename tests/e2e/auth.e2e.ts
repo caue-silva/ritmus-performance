@@ -51,3 +51,28 @@ test("conta nova é obrigada a trocar a senha temporária", async ({ page }) => 
     await db.auth.admin.deleteUser(data.user!.id)
   }
 })
+
+test("sessão de conta que não existe mais é limpa e volta para o login", async ({ page, context }) => {
+  const db = service()
+  const email = `sumiu-${Date.now()}@ritmus.test`
+  const { data } = await db.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true })
+  await db.from("profiles").insert({ id: data.user!.id, email, full_name: "Conta Removida", role: "personal", must_change_password: false })
+  await login(page, email)
+  // Expira o token de acesso para forçar a renovação, e remove a conta (como num reset do banco).
+  const cookies = await context.cookies()
+  await db.auth.admin.deleteUser(data.user!.id)
+  await context.clearCookies()
+  await context.addCookies(
+    cookies.map((c) => {
+      if (!c.name.includes("auth-token")) return c
+      const raw = decodeURIComponent(c.value).replace(/^base64-/, "")
+      const session = JSON.parse(Buffer.from(raw, "base64").toString("utf8"))
+      session.expires_at = Math.floor(Date.now() / 1000) - 60
+      return { ...c, value: `base64-${Buffer.from(JSON.stringify(session)).toString("base64url")}` }
+    }),
+  )
+  await page.goto("/alunos")
+  await expect(page).toHaveURL(/\/login/)
+  const left = (await context.cookies()).filter((c) => c.name.includes("auth-token"))
+  expect(left).toHaveLength(0)
+})

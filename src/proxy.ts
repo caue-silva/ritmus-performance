@@ -23,8 +23,14 @@ export async function proxy(request: NextRequest) {
   })
 
   // Não colocar código entre createServerClient e getClaims: é aqui que a sessão é renovada.
-  const { data } = await supabase.auth.getClaims()
+  const { data, error } = await supabase.auth.getClaims()
   const loggedIn = Boolean(data?.claims?.sub)
+
+  // Sessão que não existe mais (ex.: banco recriado, conta removida): limpa os cookies
+  // na primeira vez, em vez de tentar renovar a cada requisição.
+  if (error && "code" in error && (error.code === "refresh_token_not_found" || error.code === "session_not_found")) {
+    await supabase.auth.signOut({ scope: "local" })
+  }
 
   const { pathname } = request.nextUrl
   const isPublic = PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
