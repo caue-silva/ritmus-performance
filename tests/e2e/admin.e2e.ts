@@ -125,3 +125,36 @@ test("personal edita os dados do próprio aluno, mas não vê mensalidade nem a�
   await expect(page).toHaveURL(new RegExp(`/alunos/${s!.id}$`))
   await expect(page.getByText("1,72 m")).toBeVisible()
 })
+
+test("painel de ativação rola no celular até o botão e os campos de baixo", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 667 })
+  await login(page, USERS.admin)
+  await page.getByRole("article").filter({ hasText: "Tatiane" }).getByRole("button", { name: "Ativar" }).click()
+  const sheet = page.getByRole("dialog")
+  await sheet.getByRole("button", { name: "Gabriel" }).click()
+  const body = sheet.locator("form > div").first()
+  const scrollable = await body.evaluate((el) => el.scrollHeight > el.clientHeight)
+  expect(scrollable).toBe(true)
+  await body.hover()
+  await page.mouse.wheel(0, 2000)
+  await expect.poll(() => body.evaluate((el) => el.scrollTop)).toBeGreaterThan(100)
+  await expect(sheet.getByLabel("Dia do vencimento")).toBeInViewport()
+  await expect(sheet.getByRole("button", { name: "Ativar aluno" })).toBeInViewport()
+})
+
+test("foto do personal: admin envia na Equipe e ela aparece no card", async ({ page }) => {
+  const sharp = (await import("sharp")).default
+  const png = await sharp({ create: { width: 600, height: 400, channels: 3, background: { r: 240, g: 91, b: 42 } } }).png().toBuffer()
+  const db = service()
+  const { data: bruno } = await db.from("profiles").select("id").eq("email", "bruno@ritmus.test").single()
+  try {
+    await login(page, USERS.admin)
+    await page.goto("/equipe")
+    const card = page.getByRole("listitem").filter({ hasText: "bruno@ritmus.test" })
+    await card.locator('input[type="file"]').setInputFiles({ name: "foto.png", mimeType: "image/png", buffer: png })
+    await expect(page.getByText("Foto atualizada.")).toBeVisible()
+    await expect(card.locator("img")).toHaveAttribute("src", new RegExp(`/avatars/${bruno!.id}/`))
+  } finally {
+    await db.from("profiles").update({ avatar_url: null }).eq("id", bruno!.id)
+  }
+})

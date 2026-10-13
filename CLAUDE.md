@@ -40,6 +40,7 @@ O seed imprime o link de cadastro do pré-cadastro "Carolina Dias" (para testar 
 - Dentro de função `SECURITY DEFINER`, `current_user` é o dono da função: para saber se é o servidor use `auth.jwt() ->> 'role' = 'service_role'`, não `app.is_privileged()`.
 - Tarefas da Central = view `admin_tasks` (derivada, filtrada por `app.is_admin()`). Tarefa nova = novo `union all` na view, nunca tabela de tarefas.
 - Formulário público (`/cadastro/[token]`): sem login; o servidor valida o hash do token e grava com a chave secreta. Validação compartilhada em `src/features/cadastro/schema.ts`.
+- Fotos da equipe: bucket público `avatars` no Supabase Storage, pasta `<id do perfil>/`; o personal grava só na própria pasta, o admin em qualquer uma. Redimensionar no aparelho antes de enviar. Exames e outros arquivos de aluno continuam fora do sistema.
 - Todo teste novo de permissão vai em `tests/rls/`.
 
 ## Código

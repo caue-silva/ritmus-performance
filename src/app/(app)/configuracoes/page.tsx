@@ -60,7 +60,7 @@ export default async function ConfiguracoesPage() {
       </Section>
       <Section
         title="Textos legais"
-        description="Textos provisórios: serão validados juridicamente antes de ir ao ar. Cada alteração vira uma nova versão."
+        description="Não são enviados separadamente: aparecem no formulário que o aluno abre pelo link de cadastro. A declaração de saúde fica na etapa “Saúde” e os termos e a LGPD na última etapa. O aluno só envia o cadastro depois de aceitar, e o aceite fica registrado na ficha dele com data, hora e versão do texto. Textos provisórios: serão validados juridicamente antes de ir ao ar."
       >
         {DOCS.map((d) => {
           const doc = docs?.find((x) => x.kind === d.kind)

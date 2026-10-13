@@ -399,6 +399,17 @@ describe("ativação e acesso", () => {
     ok(await svc.from("profiles").update({ active: true }).eq("id", anaId))
   })
 
+  it("foto: personal envia só na própria pasta; admin em qualquer uma", async () => {
+    const file = new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], { type: "image/jpeg" })
+    const own = await ana.storage.from("avatars").upload(`${anaId}/${TAG}.jpg`, file, { contentType: "image/jpeg" })
+    expect(own.error).toBeNull()
+    const other = await ana.storage.from("avatars").upload(`${brunoId}/${TAG}.jpg`, file, { contentType: "image/jpeg" })
+    expect(other.error).not.toBeNull()
+    const admin = await gabriel.storage.from("avatars").upload(`${brunoId}/${TAG}.jpg`, file, { contentType: "image/jpeg" })
+    expect(admin.error).toBeNull()
+    await svc.storage.from("avatars").remove([`${anaId}/${TAG}.jpg`, `${brunoId}/${TAG}.jpg`])
+  })
+
   it("personal não se promove a admin nem se reativa", async () => {
     const res = await ana.from("profiles").update({ role: "admin" }).eq("id", anaId)
     expect(res.error).not.toBeNull()

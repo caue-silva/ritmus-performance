@@ -73,7 +73,7 @@ export default async function AgendaPage({ searchParams }: PageProps<"/agenda">)
       />
 
       {isAdmin && staffList?.data && (
-        <nav aria-label="Filtrar por personal" className="no-scrollbar -mx-4 mb-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
+        <nav aria-label="Filtrar por personal" className="no-scrollbar -mx-4 mb-6 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
           {[{ id: undefined, full_name: "Todos" }, ...staffList.data].map((p) => (
             <Link
               key={p.id ?? "todos"}

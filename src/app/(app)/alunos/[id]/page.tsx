@@ -1,4 +1,4 @@
-import { ArrowLeft, HeartPulse, MessageCircle, Pencil, Phone, ShieldCheck } from "lucide-react"
+import { ArrowLeft, CalendarDays, HeartPulse, MessageCircle, Pencil, Phone, ShieldCheck, UserRound } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
@@ -83,13 +83,25 @@ export default async function AlunoPage({ params }: PageProps<"/alunos/[id]">) {
           </Link>
         </Button>
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="grid gap-2">
+          <div className="grid gap-3">
             <h1 className="font-display text-3xl leading-tight font-bold uppercase md:text-4xl">{s.full_name}</h1>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground">
-              <StudentStatusBadge status={s.status} />
-              {s.personal?.full_name && <span>com {s.personal.full_name.split(" ")[0]}</span>}
-              {s.status === "ativo" && <span>{summarizeSchedule(enrollments)}</span>}
-            </div>
+            <ul className="flex flex-wrap items-center gap-2" aria-label="Resumo do aluno">
+              <li>
+                <StudentStatusBadge status={s.status} />
+              </li>
+              {s.personal?.full_name && (
+                <li className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-0.5 text-sm font-semibold">
+                  <UserRound className="size-4" aria-hidden />
+                  <span className="sr-only">Personal:</span> {s.personal.full_name.split(" ")[0]}
+                </li>
+              )}
+              {s.status === "ativo" && (
+                <li className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-0.5 text-sm font-semibold">
+                  <CalendarDays className="size-4" aria-hidden />
+                  <span className="sr-only">Horários:</span> {summarizeSchedule(enrollments)}
+                </li>
+              )}
+            </ul>
           </div>
         </div>
       </div>
@@ -251,6 +263,24 @@ export default async function AlunoPage({ params }: PageProps<"/alunos/[id]">) {
           {isAdmin && options && (
             <Section title="Mensalidade">
               <FeeEditor target={target} referenceFees={options.referenceFees} />
+            </Section>
+          )}
+
+          {isAdmin && detail.consents.length > 0 && (
+            <Section title="Aceites do cadastro">
+              <ul className="grid gap-2">
+                {detail.consents.map((c) => (
+                  <li key={c.kind} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                    <span className="font-semibold">
+                      {c.kind === "termos" ? "Termos de uso" : c.kind === "lgpd" ? "Consentimento LGPD" : "Declaração de saúde"}
+                      <span className="ml-1.5 font-normal text-muted-foreground">versão {c.version}</span>
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(c.accepted_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </Section>
           )}
 

@@ -4,7 +4,7 @@ import { CircleUser, LogOut, Monitor, Moon, Sun } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { StaffAvatar } from "@/components/brand/staff-avatar"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -17,17 +17,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { signOut } from "@/features/auth/actions"
-import { initials } from "@/lib/format"
 
-export function AccountMenu({ name, roleLabel }: { name: string; roleLabel: string }) {
+export function AccountMenu({ name, roleLabel, avatarUrl }: { name: string; roleLabel: string; avatarUrl?: string | null }) {
   const { theme, setTheme } = useTheme()
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" aria-label="Minha conta">
-          <Avatar className="size-9">
-            <AvatarFallback className="bg-foreground font-semibold text-background">{initials(name)}</AvatarFallback>
-          </Avatar>
+          <StaffAvatar name={name} url={avatarUrl} size={36} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">

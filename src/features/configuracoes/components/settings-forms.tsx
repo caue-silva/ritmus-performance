@@ -111,7 +111,7 @@ export function ReferenceFeesForm({ fees }: { fees: Record<string, number> }) {
   const [pending, start] = useTransition()
   return (
     <form
-      className="grid gap-4"
+      className="grid gap-6"
       onSubmit={(e) => {
         e.preventDefault()
         start(async () => {
@@ -122,7 +122,7 @@ export function ReferenceFeesForm({ fees }: { fees: Record<string, number> }) {
         })
       }}
     >
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-3 sm:gap-4">
         {keys.map((k) => (
           <MoneyField key={k} id={`fee-${k}`} label={`${k}x por semana`} value={values[k] ?? ""} onChange={(v) => setValues((x) => ({ ...x, [k]: v }))} />
         ))}

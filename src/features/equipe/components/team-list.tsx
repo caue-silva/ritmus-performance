@@ -11,15 +11,17 @@ import { toastWithUndo } from "@/components/feedback/undo-toast"
 import { TextField } from "@/components/form/fields"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
-import { firstName, formatPhone, initials } from "@/lib/format"
+import { firstName, formatPhone } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { maskPhone } from "@/lib/validation"
 import { whatsappLink } from "@/lib/whatsapp"
 
 import { createStaff, resetStaffPassword, setStaffActive, suggestTempPassword, updateStaff } from "../actions"
+import { AvatarUploader } from "./avatar-uploader"
 
 export type Member = {
   id: string
+  avatar_url: string | null
   full_name: string
   email: string
   whatsapp: string | null
@@ -57,13 +59,11 @@ export function TeamList({ members, suggestedPassword, loginUrl }: { members: Me
 
   return (
     <>
-      <ul className="grid gap-3 pb-20 md:grid-cols-2 md:pb-0">
+      <ul className="grid gap-4 md:grid-cols-2">
         {members.map((m) => (
-          <li key={m.id} className={cn("grid gap-4 rounded-xl border border-border bg-card p-5", !m.active && "opacity-75")}>
-            <div className="flex items-start gap-3">
-              <span className="grid size-12 shrink-0 place-items-center rounded-full bg-foreground font-bold text-background">
-                {initials(m.full_name)}
-              </span>
+          <li key={m.id} className={cn("flex flex-col gap-5 rounded-xl border border-border bg-card p-5", !m.active && "opacity-75")}>
+            <div className="flex items-center gap-4">
+              <AvatarUploader staffId={m.id} name={m.full_name} url={m.avatar_url} size={64} compact />
               <div className="min-w-0 flex-1">
                 <p className="font-display text-xl leading-tight font-bold uppercase">{m.full_name}</p>
                 <p className="truncate text-sm text-muted-foreground">{m.email}</p>
@@ -71,23 +71,23 @@ export function TeamList({ members, suggestedPassword, loginUrl }: { members: Me
               </div>
             </div>
             <div className="flex flex-wrap gap-2 text-sm">
-              <span className="rounded-full bg-secondary px-2.5 py-0.5 font-semibold">{m.role === "admin" ? "Administrador" : "Personal"}</span>
-              {!m.active && <span className="rounded-full bg-destructive/10 px-2.5 py-0.5 font-semibold text-destructive">Desativado</span>}
+              <span className="rounded-full bg-secondary px-3 py-1 font-semibold">{m.role === "admin" ? "Administrador" : "Personal"}</span>
+              {!m.active && <span className="rounded-full bg-destructive/10 px-3 py-1 font-semibold text-destructive">Desativado</span>}
               {m.active && m.must_change_password && (
-                <span className="rounded-full bg-warning-soft px-2.5 py-0.5 font-semibold text-warning">Ainda não criou a senha</span>
+                <span className="rounded-full bg-warning-soft px-3 py-1 font-semibold text-warning">Ainda não criou a senha</span>
               )}
             </div>
-            <dl className="grid gap-1 text-sm">
-              <div className="flex gap-2">
-                <dt className="text-muted-foreground">Alunos ativos:</dt>
+            <dl className="grid gap-2 text-sm">
+              <div className="grid grid-cols-[6.5rem_1fr] gap-2">
+                <dt className="text-muted-foreground">Alunos ativos</dt>
                 <dd className="font-semibold">{m.activeStudents}</dd>
               </div>
-              <div className="flex gap-2">
-                <dt className="shrink-0 text-muted-foreground">Horários:</dt>
+              <div className="grid grid-cols-[6.5rem_1fr] gap-2">
+                <dt className="text-muted-foreground">Horários</dt>
                 <dd className="font-semibold">{m.schedule}</dd>
               </div>
             </dl>
-            <div className="flex flex-wrap gap-2">
+            <div className="mt-auto flex flex-wrap gap-2 border-t border-border pt-4">
               <Button variant="outline" size="sm" onClick={() => setEditing(m)}>
                 <Pencil aria-hidden /> Editar
               </Button>
@@ -111,11 +111,7 @@ export function TeamList({ members, suggestedPassword, loginUrl }: { members: Me
         ))}
       </ul>
 
-      <Button
-        size="lg"
-        onClick={() => setCreating(true)}
-        className="fixed right-4 bottom-[calc(var(--nav-h)+env(safe-area-inset-bottom)+1rem)] z-30 rounded-full shadow-lg md:static md:mt-5 md:rounded-lg md:shadow-none"
-      >
+      <Button size="lg" onClick={() => setCreating(true)} className="mt-6 w-full md:w-auto">
         <Plus aria-hidden /> Novo personal
       </Button>
 

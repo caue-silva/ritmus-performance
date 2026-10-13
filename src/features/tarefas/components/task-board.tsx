@@ -96,7 +96,7 @@ export function TaskBoard({ tasks, options }: { tasks: Task[]; options: Activati
     <>
       {/* Celular: lista única por urgência, com filtros rápidos */}
       <div className="md:hidden">
-        <div className="no-scrollbar -mx-4 mb-4 flex gap-2 overflow-x-auto px-4" role="toolbar" aria-label="Filtrar tarefas">
+        <div className="no-scrollbar -mx-4 mb-6 flex gap-2 overflow-x-auto px-4" role="toolbar" aria-label="Filtrar tarefas">
           {[{ id: "todas" as const, label: "Todas", count: visible.length }, ...GROUPS.map((g) => ({ ...g, count: countOf(g.id) }))]
             .filter((f) => f.id === "todas" || f.count > 0)
             .map((f) => (

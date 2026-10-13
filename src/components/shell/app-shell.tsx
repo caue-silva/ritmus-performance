@@ -27,7 +27,7 @@ export function AppShell({ staff, taskCount = 0, children }: { staff: Staff; tas
               <div className="md:hidden">
                 <StudentSearch variant="icon" />
               </div>
-              <AccountMenu name={staff.full_name} roleLabel={roleLabel} />
+              <AccountMenu name={staff.full_name} roleLabel={roleLabel} avatarUrl={staff.avatar_url} />
             </div>
           </div>
         </header>

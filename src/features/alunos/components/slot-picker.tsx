@@ -29,14 +29,14 @@ export function SlotPicker({
   }, [slots])
 
   return (
-    <div className="grid gap-2">
+    <div className="grid gap-4">
       <p className="text-sm text-muted-foreground" aria-live="polite">
         {selected.length} de {frequency || "?"} escolhidos · o número mostra as vagas ocupadas
       </p>
       {byWeekday.map(([weekday, list]) => (
-        <div key={weekday} className="grid grid-cols-[2.75rem_1fr] items-start gap-2">
-          <span className="pt-3 text-sm font-bold">{WEEKDAY_SHORT[weekday]}</span>
-          <div className="flex flex-wrap gap-1.5">
+        <div key={weekday} className="grid gap-2">
+          <span className="text-sm font-bold">{WEEKDAY_SHORT[weekday]}</span>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(4.75rem,1fr))] gap-2">
             {list.map((s) => {
               const isSelected = selected.includes(s.id)
               const others = s.taken - (alreadyMine.includes(s.id) ? 1 : 0)
@@ -51,7 +51,7 @@ export function SlotPicker({
                   aria-label={`${WEEKDAY_SHORT[weekday]} ${formatHour(s.start_time)}, ${shown} de ${s.capacity} vagas ocupadas${full ? ", lotado" : ""}`}
                   onClick={() => onChange(isSelected ? selected.filter((x) => x !== s.id) : [...selected, s.id])}
                   className={cn(
-                    "flex min-h-tap min-w-[4.5rem] flex-col items-center justify-center rounded-lg border px-2 leading-tight transition-colors",
+                    "flex h-16 flex-col items-center justify-center gap-0.5 rounded-xl border-2 px-2 leading-tight transition-colors",
                     isSelected
                       ? "border-foreground bg-foreground text-background"
                       : full
@@ -59,8 +59,8 @@ export function SlotPicker({
                         : "border-input bg-card hover:border-foreground/40",
                   )}
                 >
-                  <span className="font-semibold">{formatHour(s.start_time)}</span>
-                  <span className="text-xs">{full ? "lotado" : `${shown}/${s.capacity}`}</span>
+                  <span className="font-display text-xl font-bold">{formatHour(s.start_time)}</span>
+                  <span className="text-xs font-medium">{full ? "lotado" : `${shown}/${s.capacity} vagas`}</span>
                 </button>
               )
             })}

@@ -21,6 +21,7 @@ export default async function EquipePage() {
 
   const members = (staff ?? []).map((p) => ({
     id: p.id,
+    avatar_url: p.avatar_url,
     full_name: p.full_name,
     email: p.email,
     whatsapp: p.whatsapp,

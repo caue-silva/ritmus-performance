@@ -97,7 +97,7 @@ export function SlotsEditor({
 
   return (
     <Card title="Quem dá aula em cada horário" description="Um horário por vez, com até 4 alunos. Toque no nome para trocar.">
-      <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5" role="tablist" aria-label="Dia da semana">
+      <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1" role="tablist" aria-label="Dia da semana">
         {openDays.map((d) => (
           <button
             key={d}
@@ -117,13 +117,13 @@ export function SlotsEditor({
       {times.length === 0 ? (
         <p className="text-muted-foreground">O estúdio está fechado neste dia. Ajuste o funcionamento abaixo.</p>
       ) : (
-        <ul className="grid gap-2" role="tabpanel" aria-label={WEEKDAY_LONG[day]}>
+        <ul className="grid gap-3" role="tabpanel" aria-label={WEEKDAY_LONG[day]}>
           {times.map((time) => {
             const current = owner(time)
             const fixed = slots.find((s) => s.weekday === day && s.start_time === time)?.fixed ?? 0
             const key = `${day}-${time}`
             return (
-              <li key={time} className="grid gap-2 rounded-lg border border-border p-3 sm:grid-cols-[4.5rem_1fr] sm:items-center">
+              <li key={time} className="grid gap-3 rounded-xl border border-border bg-background/60 p-4 sm:grid-cols-[5rem_1fr] sm:items-center">
                 <div className="flex items-baseline justify-between sm:block">
                   <span className="font-display text-xl font-bold">{formatHour(time)}</span>
                   {fixed > 0 && (
@@ -132,7 +132,7 @@ export function SlotsEditor({
                     </span>
                   )}
                 </div>
-                <div className="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label={`Personal ${formatHour(time)}`}>
+                <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label={`Personal ${formatHour(time)}`}>
                   {[{ id: null as string | null, full_name: "Sem aula" }, ...staff].map((p) => (
                     <button
                       key={p.id ?? "none"}
@@ -142,7 +142,7 @@ export function SlotsEditor({
                       disabled={pending === key}
                       onClick={() => assign(time, p.id)}
                       className={cn(
-                        "min-h-tap rounded-full border px-3 text-sm font-semibold transition-colors",
+                        "min-h-tap rounded-full border px-4 text-sm font-semibold transition-colors",
                         current === p.id
                           ? p.id
                             ? "border-foreground bg-foreground text-background"

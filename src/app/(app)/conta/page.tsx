@@ -8,6 +8,8 @@ import { signOut } from "@/features/auth/actions"
 import { requireStaff } from "@/lib/auth"
 import { formatPhone } from "@/lib/format"
 
+import { AvatarUploader } from "@/features/equipe/components/avatar-uploader"
+
 import { PasswordForm } from "../../(public)/primeiro-acesso/password-form"
 
 export const metadata: Metadata = { title: "Minha conta" }
@@ -27,6 +29,7 @@ export default async function ContaPage() {
     <div className="mx-auto grid max-w-xl gap-5">
       <PageHeader title="Minha conta" className="mb-1" />
       <Section title="Seus dados">
+        <AvatarUploader staffId={staff.id} name={staff.full_name} url={staff.avatar_url} />
         <dl className="grid gap-3">
           {[
             ["Nome", staff.full_name],

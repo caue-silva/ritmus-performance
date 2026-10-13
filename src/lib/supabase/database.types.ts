@@ -323,14 +323,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "active": boolean,"created_at": string,"email": string,"full_name": string,"id": string,"must_change_password": boolean,"role": Database["public"]['Enums']["staff_role"],"updated_at": string,"whatsapp": string | null
+                    "active": boolean,"avatar_url": string | null,"created_at": string,"email": string,"full_name": string,"id": string,"must_change_password": boolean,"role": Database["public"]['Enums']["staff_role"],"updated_at": string,"whatsapp": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "active"?: boolean,"created_at"?: string,"email": string,"full_name": string,"id": string,"must_change_password"?: boolean,"role"?: Database["public"]['Enums']["staff_role"],"updated_at"?: string,"whatsapp"?: string | null
+                    "active"?: boolean,"avatar_url"?: string | null,"created_at"?: string,"email": string,"full_name": string,"id": string,"must_change_password"?: boolean,"role"?: Database["public"]['Enums']["staff_role"],"updated_at"?: string,"whatsapp"?: string | null
                   }
                   Update: {
-                    "active"?: boolean,"created_at"?: string,"email"?: string,"full_name"?: string,"id"?: string,"must_change_password"?: boolean,"role"?: Database["public"]['Enums']["staff_role"],"updated_at"?: string,"whatsapp"?: string | null
+                    "active"?: boolean,"avatar_url"?: string | null,"created_at"?: string,"email"?: string,"full_name"?: string,"id"?: string,"must_change_password"?: boolean,"role"?: Database["public"]['Enums']["staff_role"],"updated_at"?: string,"whatsapp"?: string | null
                   }
                   Relationships: [
                     
