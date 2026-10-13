@@ -47,6 +47,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // Tudo, menos arquivos estáticos, ícones, manifest e service worker.
-    "/((?!_next/static|_next/image|favicon.ico|icons/|logo-ritmus.png|manifest.webmanifest|sw.js|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icons/|logo-ritmus.png|manifest.webmanifest|sw.js|offline.html|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)",
   ],
 }

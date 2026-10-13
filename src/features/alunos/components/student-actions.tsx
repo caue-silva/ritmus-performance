@@ -1,6 +1,6 @@
 "use client"
 
-import { HeartPulse, Link2, PauseCircle, PlayCircle, UserCheck, UserX } from "lucide-react"
+import { Download, HeartPulse, Link2, PauseCircle, PlayCircle, Trash2, UserCheck, UserX } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { formatBRL, summarizeSchedule } from "@/lib/format"
 import type { Enums } from "@/lib/supabase/database.types"
 
-import { regenerateInvite, releaseStudent, setStudentSchedule } from "../actions"
+import { anonymizeStudent, regenerateInvite, releaseStudent, setStudentSchedule } from "../actions"
 import type { ActivationOptions } from "../queries"
 import { SlotPicker } from "./slot-picker"
 import { ActivationSheet, type ActivationTarget } from "./activation-sheet"
@@ -258,6 +258,67 @@ export function ScheduleEditor({
         ) : (
           <p className="text-muted-foreground">O personal deste aluno ainda não tem horários. Monte a grade em Configurações → Horários.</p>
         )}
+      </ActionSheet>
+    </>
+  )
+}
+
+/** LGPD: exportar (cópia dos dados) e excluir dados pessoais. Só admin. */
+export function LgpdActions({ studentId, name }: { studentId: string; name: string }) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [understood, setUnderstood] = useState(false)
+  const [error, setError] = useState<string>()
+  const [pending, start] = useTransition()
+  const first = name.split(" ")[0]
+
+  return (
+    <>
+      <p className="text-sm text-muted-foreground">
+        Pelo que diz a LGPD, o aluno pode pedir uma cópia dos dados ou que eles sejam apagados.
+      </p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Button asChild variant="outline">
+          <a href={`/alunos/${studentId}/exportar`} download>
+            <Download aria-hidden /> Exportar dados
+          </a>
+        </Button>
+        <Button variant="ghost" className="text-destructive" onClick={() => setOpen(true)}>
+          <Trash2 aria-hidden /> Excluir dados pessoais
+        </Button>
+      </div>
+      <ActionSheet
+        open={open}
+        onOpenChange={(o) => {
+          setOpen(o)
+          if (!o) setUnderstood(false)
+        }}
+        title={`Excluir dados de ${first}`}
+        description="Não dá para desfazer. Exporte os dados antes, se o aluno pediu uma cópia."
+        submitLabel="Excluir dados pessoais"
+        submitVariant="destructive"
+        submitDisabled={!understood}
+        pending={pending}
+        error={error}
+        onSubmit={() =>
+          start(async () => {
+            const res = await anonymizeStudent(studentId)
+            if (!res.ok) return setError(res.message)
+            setOpen(false)
+            toast.success("Dados pessoais excluídos.")
+            router.push("/alunos")
+          })
+        }
+      >
+        <ul className="grid list-disc gap-1 pl-5 text-sm">
+          <li>Some: nome, CPF, contatos, endereço, PAR-Q, observações de saúde e medições.</li>
+          <li>O aluno sai dos horários e das próximas aulas; mensalidades em aberto são apagadas.</li>
+          <li>Fica (sem nome): valores já pagos e datas de aulas, para os relatórios do estúdio, e o registro dos aceites.</li>
+        </ul>
+        <label className="flex min-h-tap items-center gap-3 rounded-xl border border-input px-4 py-3 font-medium">
+          <input type="checkbox" checked={understood} onChange={(e) => setUnderstood(e.target.checked)} className="size-6 accent-[var(--destructive)]" />
+          Entendo que não dá para desfazer.
+        </label>
       </ActionSheet>
     </>
   )

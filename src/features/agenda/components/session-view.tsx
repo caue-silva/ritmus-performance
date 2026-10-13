@@ -393,6 +393,7 @@ function CancelSheet({ sessionId, onClose, onDone }: { sessionId: string; onClos
       title="Cancelar aula"
       description="Os alunos continuam na lista, mas a aula fica marcada como cancelada. Dá para reabrir depois."
       submitLabel="Cancelar esta aula"
+      submitVariant="destructive"
       onSubmit={() =>
         start(async () => {
           const res = await setSessionCanceled(sessionId, true, reason)

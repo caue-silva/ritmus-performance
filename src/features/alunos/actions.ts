@@ -236,6 +236,18 @@ export async function updateStudentHeight(studentId: string, heightCm: number): 
   return { ok: true, data: undefined }
 }
 
+/** LGPD: exclui os dados pessoais (anonimiza) — não dá para desfazer. */
+export async function anonymizeStudent(studentId: string): Promise<ActionResult> {
+  await requireAdmin()
+  const supabase = await createClient()
+  const { error } = await supabase.rpc("anonymize_student", { p_student_id: studentId })
+  if (error) return fail(dbMessage(error, "Não deu para excluir os dados agora. Tente de novo."))
+  refresh(studentId)
+  revalidatePath("/financeiro", "layout")
+  revalidatePath("/agenda", "layout")
+  return { ok: true, data: undefined }
+}
+
 export async function releaseStudent(studentId: string, status: "pausado" | "inativo"): Promise<ActionResult> {
   await requireAdmin()
   const supabase = await createClient()

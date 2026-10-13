@@ -158,3 +158,32 @@ test("foto do personal: admin envia na Equipe e ela aparece no card", async ({ p
     await db.from("profiles").update({ avatar_url: null }).eq("id", bruno!.id)
   }
 })
+
+test("LGPD: exportar dados em JSON e excluir dados pessoais", async ({ page }) => {
+  const db = service()
+  const { data: s } = await db
+    .from("students")
+    .insert({ full_name: `Helena LGPD ${TAG}`, whatsapp: "15991234567", status: "aguardando", cpf: "11144477735", city: "Pilar do Sul" })
+    .select("id")
+    .single()
+  await login(page, USERS.admin)
+  await page.goto(`/alunos/${s!.id}`)
+
+  const download = page.waitForEvent("download")
+  await page.getByRole("link", { name: "Exportar dados" }).click()
+  const file = await download
+  expect(file.suggestedFilename()).toMatch(/^ritmus-dados-helena-lgpd-.*\.json$/)
+  const json = JSON.parse(await (await file.createReadStream()).toArray().then((c) => Buffer.concat(c).toString("utf8")))
+  expect(json.aluno).toMatchObject({ full_name: expect.stringContaining("Helena"), cpf: "11144477735" })
+  expect(json.aluno.id).toBeUndefined()
+
+  await page.getByRole("button", { name: "Excluir dados pessoais" }).click()
+  const sheet = page.getByRole("dialog")
+  await expect(sheet.getByRole("button", { name: "Excluir dados pessoais" })).toBeDisabled()
+  await sheet.getByText("Entendo que não dá para desfazer.").click()
+  await sheet.getByRole("button", { name: "Excluir dados pessoais" }).click()
+  await expect(page).toHaveURL(/\/alunos$/)
+  const { data: after } = await db.from("students").select("full_name, cpf").eq("id", s!.id).single()
+  expect(after).toEqual({ full_name: "Aluno removido", cpf: null })
+  await db.from("students").delete().eq("id", s!.id)
+})

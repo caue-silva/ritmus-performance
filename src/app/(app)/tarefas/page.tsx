@@ -4,6 +4,7 @@ import Link from "next/link"
 
 import { PageHeader } from "@/components/shell/page-header"
 import { Button } from "@/components/ui/button"
+import { InstallBanner } from "@/components/pwa/install-app"
 import { NowCard } from "@/features/agenda/components/now-card"
 import { getNow } from "@/features/agenda/queries"
 import { getActivationOptions } from "@/features/alunos/queries"
@@ -34,6 +35,7 @@ export default async function TarefasPage() {
           </Button>
         }
       />
+      <InstallBanner />
       <NowCard now={now} />
       <TaskBoard tasks={tasks} options={options} />
     </>

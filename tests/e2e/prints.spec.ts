@@ -7,7 +7,7 @@ import { test, type Page } from "@playwright/test"
 import { generateToken, hashToken } from "../../src/lib/tokens"
 import { login, PASSWORD, service, USERS, VIEWPORTS } from "./support"
 
-const PHASE = process.env.PRINTS_PHASE ?? "fase-5"
+const PHASE = process.env.PRINTS_PHASE ?? "fase-6"
 const TAG = `print${Date.now().toString(36)}`
 
 async function shoot(page: Page, name: string, opts: { dark?: boolean; full?: boolean } = {}) {
@@ -282,4 +282,23 @@ test("financeiro", async ({ page }) => {
   await shoot(page, "admin-relatorios")
   await page.goto("/configuracoes#pix")
   await shoot(page, "admin-configuracoes-pix", { full: false })
+})
+
+test("painel, conta, LGPD e sem conexão", async ({ page }) => {
+  await login(page, USERS.admin)
+  await page.goto("/painel")
+  await shoot(page, "admin-painel")
+  await page.emulateMedia({ colorScheme: "dark" })
+  await page.goto("/painel")
+  await shoot(page, "admin-painel", { dark: true })
+  await page.emulateMedia({ colorScheme: "light" })
+  await page.goto("/conta")
+  await shoot(page, "admin-conta")
+  await page.goto(`/alunos/${await studentId("Gustavo Martins")}`)
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.getByRole("button", { name: "Excluir dados pessoais" }).click()
+  await one(page, "admin-lgpd-excluir")
+  await page.keyboard.press("Escape")
+  await page.goto("/offline.html")
+  await one(page, "offline")
 })

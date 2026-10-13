@@ -8,6 +8,7 @@ import { signOut } from "@/features/auth/actions"
 import { requireStaff } from "@/lib/auth"
 import { formatPhone } from "@/lib/format"
 
+import { InstallAppSection } from "@/components/pwa/install-app"
 import { AvatarUploader } from "@/features/equipe/components/avatar-uploader"
 
 import { PasswordForm } from "../../(public)/primeiro-acesso/password-form"
@@ -43,6 +44,9 @@ export default async function ContaPage() {
             </div>
           ))}
         </dl>
+      </Section>
+      <Section title="App no celular">
+        <InstallAppSection />
       </Section>
       <Section title="Aparência">
         <ThemePicker />

@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 import { EmptyState } from "@/components/feedback/empty-state"
+import { InstallBanner } from "@/components/pwa/install-app"
 import { PageHeader } from "@/components/shell/page-header"
 import { Button } from "@/components/ui/button"
 import { SessionView } from "@/features/agenda/components/session-view"
@@ -55,6 +56,7 @@ export default async function AgoraPage() {
 
   return (
     <>
+      <InstallBanner />
       <PageHeader title={now.kind === "agora" ? "Agora" : "Próxima aula"} description={description} className="mb-4" />
       {now.today.length > 1 && (
         <nav aria-label="Outras aulas de hoje" className="no-scrollbar -mx-4 mb-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">

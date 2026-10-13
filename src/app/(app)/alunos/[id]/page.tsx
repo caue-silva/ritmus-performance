@@ -5,7 +5,7 @@ import { notFound } from "next/navigation"
 
 import { StudentStatusBadge } from "@/components/feedback/status-badge"
 import { Button } from "@/components/ui/button"
-import { FeeEditor, ScheduleEditor, StatusActions, StudentPrimaryAction } from "@/features/alunos/components/student-actions"
+import { FeeEditor, LgpdActions, ScheduleEditor, StatusActions, StudentPrimaryAction } from "@/features/alunos/components/student-actions"
 import { getActivationOptions, getStudentDetail } from "@/features/alunos/queries"
 import { PARQ_QUESTIONS } from "@/features/cadastro/parq"
 import { AttendancePanel } from "@/features/evolucao/components/attendance-panel"
@@ -349,6 +349,12 @@ export default async function AlunoPage({ params, searchParams }: PageProps<"/al
           {isAdmin && (s.status === "ativo" || s.status === "pausado") && (
             <Section title="Status">
               <StatusActions studentId={s.id} name={s.full_name} status={s.status} />
+            </Section>
+          )}
+
+          {isAdmin && !s.anonymized_at && (
+            <Section title="Dados do aluno (LGPD)">
+              <LgpdActions studentId={s.id} name={s.full_name} />
             </Section>
           )}
         </div>

@@ -576,6 +576,9 @@ isOneToOne: false
             "activate_student":
 { Args: { "p_due_day": number,"p_fee_cents": number,"p_personal_id": string,"p_slot_ids": (string)[],"p_student_id": string,"p_weekly_frequency": number }; Returns: (string)[]
                            },
+"anonymize_student":
+{ Args: { "p_student_id": string }; Returns: undefined
+                           },
 "ensure_monthly_charges":
 { Args: Record<PropertyKey, never>; Returns: number
                            },

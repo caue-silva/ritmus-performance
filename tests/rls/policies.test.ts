@@ -445,6 +445,38 @@ describe("financeiro: Fase 5", () => {
   })
 })
 
+describe("LGPD: Fase 6", () => {
+  it("personal não exclui dados de aluno", async () => {
+    const res = await ana.rpc("anonymize_student", { p_student_id: alunoAna })
+    expect(res.error?.message).toMatch(/administrador/)
+  })
+
+  it("excluir apaga dados pessoais e de saúde, mantém valores pagos sem nome", async () => {
+    const id = await createStudent("Para anonimizar", anaId)
+    ok(await svc.from("students").update({ cpf: "52998224725", email: "x@y.com", city: "Pilar do Sul" }).eq("id", id))
+    ok(await svc.from("student_health").insert({ student_id: id, parq_answers: [true, false, false, false, false, false, false], health_notes: "lesão" }))
+    ok(await svc.from("measurements").insert({ client_id: crypto.randomUUID(), student_id: id, weight_kg: 80, created_by: anaId }))
+    ok(
+      await svc.from("charges").insert([
+        { student_id: id, competence: "2030-01-01", amount_cents: 30000, due_date: "2030-01-10", status: "pago", paid_on: "2030-01-10", payment_method: "pix" },
+        { student_id: id, competence: "2030-02-01", amount_cents: 30000, due_date: "2030-02-10", status: "pendente" },
+      ]),
+    )
+    ok(await gabriel.rpc("anonymize_student", { p_student_id: id }))
+
+    const s = ok(await svc.from("students").select("full_name, cpf, email, city, status, anonymized_at").eq("id", id).single())
+    expect(s).toMatchObject({ full_name: "Aluno removido", cpf: null, email: null, city: null, status: "inativo" })
+    expect(s.anonymized_at).not.toBeNull()
+    expect(ok(await svc.from("student_health").select("student_id").eq("student_id", id))).toHaveLength(0)
+    expect(ok(await svc.from("measurements").select("id").eq("student_id", id))).toHaveLength(0)
+    const charges = ok(await svc.from("charges").select("status").eq("student_id", id))
+    expect(charges).toEqual([{ status: "pago" }])
+
+    const again = await gabriel.rpc("anonymize_student", { p_student_id: id })
+    expect(again.error?.message).toMatch(/já foram excluídos/)
+  })
+})
+
 describe("ativação e acesso", () => {
   it("aluno com 'sim' no PAR-Q só é ativado depois da liberação médica", async () => {
     const id = await createStudent("Precisa liberação", brunoId, "aguardando")

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import { Barlow, Barlow_Condensed } from "next/font/google"
 
+import { ServiceWorker } from "@/components/pwa/service-worker"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
+          <ServiceWorker />
           {/* Um aviso por vez: empilhados, eles cobriam os botões da metade de baixo da tela. */}
           <Toaster
             position="bottom-center"

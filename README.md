@@ -21,7 +21,7 @@ Contas de teste (só local): `gabriel@ritmus.test` (admin), `ana@ritmus.test` e 
 ```bash
 npm test            # unitários
 npm run test:rls    # permissões no banco (RLS)
-npm run test:e2e    # fluxos no navegador
+npm run test:e2e    # fluxos no navegador e acessibilidade
 npm run prints      # prints das telas em 375/768/1024px (pasta prints/)
 ```
 
@@ -32,5 +32,9 @@ npm run logo -- caminho/do/logo-original.png
 ```
 
 Gera `public/logo-ritmus.png`, o favicon e os ícones do app. Nenhum código precisa mudar.
+
+## Publicar
+
+Veja `docs/DEPLOY.md` (Supabase + Vercel + conta do admin).
 
 Documentação: `docs/PEDIDO.md` (especificação), `docs/PLANO.md` (plano técnico) e `CLAUDE.md` (convenções).

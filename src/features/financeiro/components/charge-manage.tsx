@@ -95,6 +95,7 @@ export function ChargeManage({
         title="Cancelar mensalidade"
         description="Ela sai das cobranças e dos relatórios de previsto. Dá para reabrir depois."
         submitLabel="Cancelar esta mensalidade"
+        submitVariant="destructive"
         pending={pending}
         onSubmit={() =>
           start(async () => {

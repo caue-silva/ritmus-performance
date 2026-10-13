@@ -20,7 +20,7 @@ npm run db:types      # regenera src/lib/supabase/database.types.ts (rode após 
 npm run dev           # app em http://localhost:3000
 npm test              # testes unitários (tests/unit)
 npm run test:rls      # políticas RLS contra o banco local (tests/rls)
-npm run test:e2e      # fluxos no navegador (tests/e2e/*.e2e.ts)
+npm run test:e2e      # fluxos no navegador + acessibilidade (axe, WCAG 2.1 AA) em tests/e2e/*.e2e.ts
 npm run prints        # prints 375/768/1024 em prints/<fase>/ (PRINTS_PHASE=fase-N)
 npm run logo -- arq   # trata um logo novo e regenera logo + ícones
 ```
@@ -44,6 +44,8 @@ O seed imprime o link de cadastro do pré-cadastro "Carolina Dias" (para testar 
 - Tarefas da Central = view `admin_tasks` (derivada, filtrada por `app.is_admin()`). Tarefa nova = novo `union all` na view, nunca tabela de tarefas.
 - Formulário público (`/cadastro/[token]`): sem login; o servidor valida o hash do token e grava com a chave secreta. Validação compartilhada em `src/features/cadastro/schema.ts`.
 - Fotos da equipe: bucket público `avatars` no Supabase Storage, pasta `<id do perfil>/`; o personal grava só na própria pasta, o admin em qualquer uma. Redimensionar no aparelho antes de enviar. Exames e outros arquivos de aluno continuam fora do sistema.
+- LGPD: exportar = rota `GET /alunos/[id]/exportar` (JSON, só admin); excluir = `anonymize_student()` (apaga dados pessoais, saúde, medições e cobranças em aberto; mantém valores pagos e datas sem nome). Dado novo de aluno precisa entrar nos dois.
+- Dados iniciais do estúdio (textos, mensagens, funcionamento) ficam na migration `*_initial_data.sql` (vale em produção). `supabase/seed.sql` e `scripts/seed.ts` são só para desenvolvimento.
 - Todo teste novo de permissão vai em `tests/rls/`.
 
 ## Código
@@ -61,6 +63,7 @@ O seed imprime o link de cadastro do pré-cadastro "Carolina Dias" (para testar 
 - Mobile-first: testar 375, 768 e 1024px. Celular: barra inferior (admin: Tarefas·Agenda·Alunos·Financeiro·Mais; personal: Agora·Agenda·Alunos·Conta). md+: trilho lateral.
 - Tela inicial: admin → `/tarefas`; personal → `/agora`.
 - Alvos de toque ≥ 44px (`h-tap`), ação principal 52px (`h-tap-lg`, `size="lg"`). Ações principais na metade de baixo da tela.
+- Confirmações destrutivas usam `submitVariant="destructive"` no `ActionSheet` (vermelho), nunca o laranja.
 - Ações reversíveis: aviso curto com **Desfazer** (`toastWithUndo`) e remoção otimista do item. Só um aviso visível por vez (`visibleToasts={1}`): empilhados, cobriam os botões de baixo. Confirmação só para excluir/cancelar/liberar vaga.
 - Ação principal flutuante no celular (ex.: "Novo aluno") fica acima da barra inferior; listas embaixo dela ganham `mb-20 md:mb-0`.
 - `devIndicators: false` no next.config: o indicador do modo dev cobria botões no canto inferior.
@@ -77,6 +80,13 @@ O seed imprime o link de cadastro do pré-cadastro "Carolina Dias" (para testar 
 - Playwright roda com `reducedMotion: "reduce"` (sem rolagem suave/animações: cliques estáveis e prints nítidos).
 - Testes E2E que mudam dados criam os próprios registros (nome com TAG) e limpam no `afterAll`, ou desfazem o que fizeram.
 - O seed espera o Supabase responder depois do `db reset` (os serviços reiniciam).
+
+## PWA
+- `public/sw.js`: cache só de arquivos estáticos; páginas sempre da rede (dados com login nunca ficam no cache); sem conexão → `public/offline.html`. Ao mudar o SW, troque `VERSION`.
+- O SW só é registrado em produção (`ServiceWorker` no layout raiz); em desenvolvimento ele é removido, para não servir CSS/JS antigos.
+
+## Publicação
+Passo a passo em `docs/DEPLOY.md` (Supabase + Vercel + `scripts/create-admin.ts`).
 
 ## Ao fim de cada fase
 1. `npm test && npm run test:rls && npm run test:e2e && npm run build`

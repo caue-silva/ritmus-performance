@@ -20,6 +20,7 @@ export function ActionSheet({
   onSubmit,
   pending,
   submitDisabled,
+  submitVariant = "default",
   error,
   children,
   className,
@@ -32,6 +33,8 @@ export function ActionSheet({
   onSubmit: () => void
   pending?: boolean
   submitDisabled?: boolean
+  /** "destructive" para excluir/cancelar: fica vermelho, nunca no laranja da ação principal. */
+  submitVariant?: "default" | "destructive"
   error?: string
   children: React.ReactNode
   className?: string
@@ -78,7 +81,13 @@ export function ActionSheet({
                 {error}
               </p>
             )}
-            <Button type="submit" size="lg" className="w-full" disabled={pending || submitDisabled}>
+            <Button
+              type="submit"
+              size="lg"
+              variant={submitVariant}
+              className={cn("w-full", submitVariant === "destructive" && "bg-destructive text-destructive-foreground hover:bg-destructive/90")}
+              disabled={pending || submitDisabled}
+            >
               {pending && <Loader2 className="animate-spin" aria-hidden />}
               {submitLabel}
             </Button>
