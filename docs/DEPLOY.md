@@ -19,22 +19,22 @@ Passo a passo para colocar o Ritmus no ar. Faça na ordem. Nenhuma chave secreta
 3. **Authentication → Sign In / Providers → Email:**
    - desligue **Confirm email** (o sistema não envia e-mails);
    - desligue **Allow new users to sign up** (contas só pelo Gabriel, na tela Equipe).
-4. **Authentication → URL Configuration:** em **Site URL**, coloque o endereço do app na Vercel (passo 2), por exemplo `https://ritmus-performance.vercel.app`.
+4. **Authentication → URL Configuration:** em **Site URL**, coloque o endereço do app na Vercel (passo 2), por exemplo `https://ritmus-performance-navy.vercel.app`.
 5. **Project Settings → API Keys:** você vai precisar da **URL do projeto**, da **publishable key** e da **secret key**.
 
 ## 2. Vercel (o app)
 
-1. Em https://vercel.com/new importe o repositório `caue-silva/ritmus-performance`. O framework é detectado como Next.js; não mude o comando de build.
-2. Em **Environment Variables**, cadastre para *Production* (e *Preview*, se quiser testar pull requests):
+1. O projeto **ritmus-performance** já existe na Vercel e está ligado ao repositório: cada `git push` na `main` publica sozinho. (Framework: Next.js. Proteção por login da Vercel só nos deploys de teste, para o endereço principal ficar aberto a personais e alunos.)
+2. Em **Settings → Environment Variables**, cadastre para *Production* (e *Preview*, se quiser testar pull requests):
 
    | Variável | Valor |
    |---|---|
    | `NEXT_PUBLIC_SUPABASE_URL` | URL do projeto Supabase |
    | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | publishable key |
    | `SUPABASE_SECRET_KEY` | secret key (**nunca** com `NEXT_PUBLIC_`) |
-   | `NEXT_PUBLIC_SITE_URL` | endereço final do app (ex.: `https://ritmus-performance.vercel.app`) |
+   | `NEXT_PUBLIC_SITE_URL` | endereço final do app (ex.: `https://ritmus-performance-navy.vercel.app`) |
 
-3. Faça o deploy. Se mudar o domínio depois, atualize `NEXT_PUBLIC_SITE_URL` e a **Site URL** do Supabase: ela é usada nos links de cadastro enviados pelo WhatsApp.
+3. Depois de cadastrar as variáveis, publique de novo (**Deployments → ⋯ → Redeploy** no último deploy). Endereço atual: `https://ritmus-performance-navy.vercel.app`. Se mudar o domínio depois, atualize `NEXT_PUBLIC_SITE_URL` e a **Site URL** do Supabase: ela é usada nos links de cadastro enviados pelo WhatsApp.
 
 ## 3. Primeira conta (Gabriel)
 
