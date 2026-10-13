@@ -1,29 +1,41 @@
 /**
- * Dados fictícios para desenvolvimento. Rode depois de `supabase db reset`:
+ * Dados fictícios.
+ *
+ * Desenvolvimento (Supabase LOCAL), depois de `supabase db reset`:
  *   npm run db:seed        (ou npm run db:reset, que já chama este script)
- * Só funciona contra o Supabase LOCAL (recusa qualquer outra URL).
+ *
+ * Demonstração num projeto remoto AINDA SEM DADOS REAIS (ex.: apresentar ao Gabriel):
+ *   npx tsx scripts/seed.ts --demo --env caminho/do/arquivo.env
+ *   Gera uma senha nova para as contas de demonstração (mostrada só no fim) e recusa
+ *   se o banco já tiver contas que não sejam as de demonstração.
  */
 import { createClient } from "@supabase/supabase-js"
 import { config } from "dotenv"
 
 import type { Database, TablesInsert } from "../src/lib/supabase/database.types"
-import { generateToken, hashToken } from "../src/lib/tokens"
+import { generateTempPassword, generateToken, hashToken } from "../src/lib/tokens"
 
-config({ path: ".env.local", quiet: true })
+const args = process.argv.slice(2)
+const DEMO = args.includes("--demo")
+const envIndex = args.indexOf("--env")
+config({ path: envIndex >= 0 ? args[envIndex + 1] : ".env.local", quiet: true })
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
 const secret = process.env.SUPABASE_SECRET_KEY ?? ""
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
-if (!/^http:\/\/(127\.0\.0\.1|localhost):54321/.test(url)) {
-  console.error(`Seed recusado: ${url || "(sem URL)"} não é o Supabase local.`)
+const LOCAL = /^http:\/\/(127\.0\.0\.1|localhost):54321/.test(url)
+if (!LOCAL && !DEMO) {
+  console.error(`Seed recusado: ${url || "(sem URL)"} não é o Supabase local. Para demonstração, use --demo.`)
   process.exit(1)
 }
 
 /** Senha de todas as contas fictícias (somente ambiente local). */
-const SEED_PASSWORD = process.env.SEED_PASSWORD ?? "ritmus-local-123"
+// Na demonstração (projeto remoto) a senha é nova a cada execução: a local está no repositório público.
+const SEED_PASSWORD = process.env.SEED_PASSWORD ?? (DEMO ? generateTempPassword() : "ritmus-local-123")
 
 const SEED_STAFF = [
-  { key: "gabriel", email: "gabriel@ritmus.test", full_name: "Gabriel Paiva", whatsapp: "15991110001", role: "admin" },
+  // Na demonstração o perfil do Gabriel leva o WhatsApp real dele.
+  { key: "gabriel", email: "gabriel@ritmus.test", full_name: "Gabriel Paiva", whatsapp: DEMO ? "15996363604" : "15991110001", role: "admin" },
   { key: "ana", email: "ana@ritmus.test", full_name: "Ana Souza", whatsapp: "15991110002", role: "personal" },
   { key: "bruno", email: "bruno@ritmus.test", full_name: "Bruno Lima", whatsapp: "15991110003", role: "personal" },
 ] as const
@@ -102,6 +114,7 @@ type SeedStudent = {
   status: Database["public"]["Enums"]["student_status"]
   freq: number
   fee?: number | null
+  whatsapp?: string
   parq?: boolean[]
   notes?: string
   clearance?: boolean
@@ -148,6 +161,8 @@ const STUDENTS: SeedStudent[] = [
   },
   // Cadastro recebido sem pendências → tarefa "Ativar".
   { name: "Tatiane Gomes", personal: null, status: "aguardando", freq: 2 },
+  // Demonstração: aluno com WhatsApp real (o do Cauê), para ver as mensagens chegarem de verdade.
+  ...(DEMO ? [{ name: "Cauê Belarmino", personal: "gabriel" as const, status: "ativo" as const, freq: 2, whatsapp: "11986435668" }] : []),
 ]
 
 const GOALS = [["Emagrecer"], ["Ganhar massa muscular"], ["Condicionamento", "Saúde"], ["Emagrecer", "Condicionamento"], ["Saúde"]]
@@ -167,6 +182,16 @@ async function waitForServices() {
 
 async function main() {
   await waitForServices()
+  if (DEMO) {
+    // Proteção: só roda num banco sem contas reais.
+    const { data: profiles } = await db.from("profiles").select("email")
+    const real = (profiles ?? []).filter((p) => !SEED_STAFF.some((s) => s.email === p.email))
+    if (real.length) {
+      console.error(`Demonstração recusada: o banco já tem ${real.length} conta(s) que não são de demonstração.`)
+      process.exit(1)
+    }
+    must(await db.from("studio_settings").update({ reference_fees: { "2": 28000, "3": 36000, "5": 50000 } }).eq("id", true))
+  }
   const ids = {} as Record<StaffKey, string>
   for (const s of SEED_STAFF) ids[s.key] = await ensureUser(s)
   console.log("✔ Equipe:", SEED_STAFF.map((s) => s.email).join(", "))
@@ -196,7 +221,7 @@ async function main() {
         .from("students")
         .insert({
           full_name: s.name,
-          whatsapp: `1599${String(2000000 + i * 7919).padStart(7, "0")}`,
+          whatsapp: s.whatsapp ?? `1599${String(2000000 + i * 7919).padStart(7, "0")}`,
           personal_id: s.personal ? ids[s.personal] : null,
           status: "aguardando", // ativa depois de gravar o PAR-Q
           cpf: cpf(i + 1),
@@ -410,8 +435,10 @@ async function main() {
     .not("monthly_fee_cents", "is", null)
     .eq("students.status", "ativo")
     .order("student_id")
-  const dueToday = billed?.find((b) => (b.students as unknown as { full_name: string }).full_name === "Mariana Oliveira")
-  if (dueToday) must(await db.from("student_billing").update({ due_day: todayDay }).eq("student_id", dueToday.student_id))
+  for (const name of ["Mariana Oliveira", "Cauê Belarmino"]) {
+    const dueToday = billed?.find((b) => (b.students as unknown as { full_name: string }).full_name === name)
+    if (dueToday) must(await db.from("student_billing").update({ due_day: todayDay }).eq("student_id", dueToday.student_id))
+  }
 
   const lastDay = (y: number, m: number) => new Date(Date.UTC(y, m, 0)).getUTCDate()
   const dueIn = (competence: string, day: number) => {
@@ -480,7 +507,12 @@ async function main() {
   must(await db.from("student_invites").insert({ student_id: invited.id, token_hash: hashToken(token), created_by: ids.gabriel }))
   console.log(`✔ Pré-cadastro "Carolina Dias" — link do formulário:\n  ${siteUrl}/cadastro/${token}`)
 
-  console.log(`\nContas: ${SEED_STAFF.map((s) => s.email).join(" · ")} — senha em scripts/seed.ts (SEED_PASSWORD)`)
+  if (DEMO) {
+    console.log(`\nContas de demonstração: ${SEED_STAFF.map((s) => s.email).join(" · ")}`)
+    console.log(`Senha (mostrada só agora): ${SEED_PASSWORD}`)
+  } else {
+    console.log(`\nContas: ${SEED_STAFF.map((s) => s.email).join(" · ")} — senha em scripts/seed.ts (SEED_PASSWORD)`)
+  }
 }
 
 main().catch((e) => {

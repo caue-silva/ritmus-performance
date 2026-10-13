@@ -56,6 +56,8 @@ O script mostra uma senha temporária **uma única vez**. O Gabriel entra com el
 
 ## Checklist antes de divulgar
 
+- [ ] **Limpar a demonstração** (dados fictícios e contas `@ritmus.test`) antes de cadastrar dados reais.
+
 - [ ] Fazer um cadastro de teste pelo link e excluir os dados depois (ficha do aluno → LGPD).
 - [ ] Pagar 1 centavo de teste com o Pix copia e cola gerado pelo app (confere a chave e o nome).
 - [ ] Logo: trocar pelo arquivo original quando chegar (`npm run logo -- caminho/do/logo`), fazer commit e publicar de novo.
