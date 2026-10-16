@@ -88,6 +88,13 @@ O seed imprime o link de cadastro do pré-cadastro "Carolina Dias" (para testar 
 - `public/sw.js`: cache só de arquivos estáticos; páginas sempre da rede (dados com login nunca ficam no cache); sem conexão → `public/offline.html`. Ao mudar o SW, troque `VERSION`.
 - O SW só é registrado em produção (`ServiceWorker` no layout raiz); em desenvolvimento ele é removido, para não servir CSS/JS antigos.
 
+## Midia Performance (monitoramento)
+- Agente em `src/lib/midia-agent.ts`: cópia de `public/agent/midia-agent.ts` do repositório do console. Não edite aqui; atualize lá e copie de novo.
+- Ligado no início do `proxy.ts` (modo manutenção + registro de acesso), em `src/app/api/health/route.ts` (aberta, fora do login; checa o Supabase) e em `src/instrumentation.ts` (erros do servidor).
+- `signIn`/`signOut` chamam `midiaAuthEvent` (login, falha com motivo, saída). Nunca passar senha ou token. Logins ficam 6 meses no console (Marco Civil).
+- Caminhos com UUID ou token (ex.: `/cadastro/<token>`) viram `[id]`/`[token]` antes de sair do app.
+- Variáveis `MIDIA_ENDPOINT` e `MIDIA_KEY` (só na Vercel). Sem elas o agente não faz nada.
+
 ## Publicação
 Passo a passo em `docs/DEPLOY.md` (Supabase + Vercel + `scripts/create-admin.ts`).
 - Funções da Vercel em São Paulo (`vercel.json`: `regions: ["gru1"]`), mesma região do banco. Cada tela faz várias consultas: servidor longe do banco deixa o app lento.

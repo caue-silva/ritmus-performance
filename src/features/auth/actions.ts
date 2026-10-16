@@ -1,11 +1,13 @@
 "use server"
 
+import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { z } from "zod"
 
 import { fieldErrors } from "@/lib/form-errors"
 
 import { getStaff, homePath } from "@/lib/auth"
+import { midiaAuthEvent } from "@/lib/midia-agent"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 
@@ -30,15 +32,22 @@ export async function signIn(_: FormState, formData: FormData): Promise<FormStat
 
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword(parsed.data)
+  // Registro de logins (Midia Performance, Marco Civil): quem tentou, de onde e se deu certo. Nunca a senha.
+  const h = await headers()
+  const email = parsed.data.email
+  const failed = (reason: string) => midiaAuthEvent(h, { outcome: "failure", email, method: "senha", reason })
   if (error?.code === "email_provider_disabled") {
+    failed("login desligado no Supabase")
     // Configuração do Supabase (provedor Email desligado): não é problema da pessoa.
     return { error: "O login está fora do ar por uma configuração do sistema. Avise o Gabriel." }
   }
   if (error?.code === "user_banned") {
+    failed("conta bloqueada")
     return { error: "Sua conta está desativada. Fale com o Gabriel para liberar o acesso." }
   }
   if (error) {
     const wrong = error.code === "invalid_credentials" || error.status === 400
+    failed(wrong ? "senha incorreta" : "erro no login")
     return {
       error: wrong
         ? "E-mail ou senha incorretos. Confira e tente de novo."
@@ -48,6 +57,7 @@ export async function signIn(_: FormState, formData: FormData): Promise<FormStat
 
   const staff = await getStaff()
   if (!staff || !staff.active) {
+    failed(staff ? "conta desativada" : "sem perfil no app")
     await supabase.auth.signOut()
     return {
       error: staff
@@ -55,6 +65,7 @@ export async function signIn(_: FormState, formData: FormData): Promise<FormStat
         : "Sua conta ainda não está liberada no app. Fale com o Gabriel.",
     }
   }
+  midiaAuthEvent(h, { outcome: "success", email, userId: staff.id, method: "senha" })
   if (staff.must_change_password) redirect("/primeiro-acesso")
   redirect(safeNext(formData.get("voltar")) ?? homePath(staff.role))
 }
@@ -98,7 +109,9 @@ export async function changePassword(_: FormState, formData: FormData): Promise<
 }
 
 export async function signOut() {
+  const staff = await getStaff()
   const supabase = await createClient()
   await supabase.auth.signOut()
+  if (staff) midiaAuthEvent(await headers(), { outcome: "logout", email: staff.email, userId: staff.id })
   redirect("/login")
 }

@@ -1,13 +1,23 @@
 import { createServerClient } from "@supabase/ssr"
-import { NextResponse, type NextRequest } from "next/server"
+import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server"
 
+import { midiaGuard, midiaTrack } from "@/lib/midia-agent"
 import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/env"
 
 // Rotas abertas (sem login). O resto exige sessão.
 const PUBLIC_PREFIXES = ["/login", "/cadastro"]
 
 /** Renova a sessão do Supabase e manda quem não está logado para /login. */
-export async function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest, event: NextFetchEvent) {
+  // Monitor da Midia Performance: aberto, sem sessão e sem contar como acesso.
+  if (request.nextUrl.pathname === "/api/health") return NextResponse.next()
+
+  // Modo manutenção ligado no console da Midia Performance: todos veem a página de manutenção.
+  const blocked = await midiaGuard(request)
+  if (blocked) return blocked
+  // Registra o acesso em segundo plano (caminho limpo, sem IP gravado). Não atrasa a resposta.
+  midiaTrack(request, event)
+
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(supabaseUrl(), supabasePublishableKey(), {
