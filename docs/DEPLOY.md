@@ -37,7 +37,7 @@ Passo a passo para colocar o Ritmus no ar. Faça na ordem. Nenhuma chave secreta
    | `NEXT_PUBLIC_SITE_URL` | endereço final do app (ex.: `https://ritmus-performance-navy.vercel.app`) |
    | `CRON_SECRET` | texto aleatório (`openssl rand -hex 24`); protege o ping diário do banco |
 
-   **Ping diário:** enquanto o Supabase estiver no plano gratuito, a Vercel chama `/api/cron/keepalive` uma vez por dia (`vercel.json`) para o projeto não ser pausado por inatividade. Se mesmo assim ele pausar (o app abre, mas ninguém consegue entrar e `/api/health` responde 503), entre no painel do Supabase e clique em **Restore project**. Ao assinar o Supabase Pro, remova a rota e o `crons` do `vercel.json`.
+   **Ping diário:** enquanto o Supabase estiver no plano gratuito, a Vercel chama `/api/cron/keepalive` uma vez por dia (`vercel.json`) para o projeto não ser pausado por inatividade. Se mesmo assim ele pausar (o app abre, mas ninguém consegue entrar e `/api/health` responde 503), entre no painel do Supabase e clique em **Resume project**. Se a retomada falhar (fica "Coming up" e volta a "paused", como em 21/10/2026): baixe o backup (**Download backups**, salvar em `supabase/backup/`), crie um projeto novo e refaça os passos 1.2 a 1.5 e 2.2 a 2.3. Ao assinar o Supabase Pro, remova a rota e o `crons` do `vercel.json`.
 
 3. Depois de cadastrar as variáveis, publique de novo (**Deployments → ⋯ → Redeploy** no último deploy). Endereço atual: `https://ritmus-performance-navy.vercel.app`. Se mudar o domínio depois, atualize `NEXT_PUBLIC_SITE_URL` e a **Site URL** do Supabase: ela é usada nos links de cadastro enviados pelo WhatsApp.
 

@@ -54,3 +54,8 @@ supabase/.branches/
 # macOS
 .DS_Store
 .claude/settings.local.json
+
+# Backups do banco (dados pessoais e de saúde): nunca versionar
+supabase/backup/
+*.backup
+*.backup.gz
