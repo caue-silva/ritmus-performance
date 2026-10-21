@@ -11,6 +11,8 @@ const PUBLIC_PREFIXES = ["/login", "/cadastro"]
 export async function proxy(request: NextRequest, event: NextFetchEvent) {
   // Monitor da Midia Performance: aberto, sem sessão e sem contar como acesso.
   if (request.nextUrl.pathname === "/api/health") return NextResponse.next()
+  // Rotinas da Vercel Cron: sem sessão; a própria rota confere o CRON_SECRET.
+  if (request.nextUrl.pathname.startsWith("/api/cron/")) return NextResponse.next()
 
   // Modo manutenção ligado no console da Midia Performance: todos veem a página de manutenção.
   const blocked = await midiaGuard(request)

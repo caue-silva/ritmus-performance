@@ -35,6 +35,9 @@ Passo a passo para colocar o Ritmus no ar. Faça na ordem. Nenhuma chave secreta
    | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | publishable key |
    | `SUPABASE_SECRET_KEY` | secret key (**nunca** com `NEXT_PUBLIC_`) |
    | `NEXT_PUBLIC_SITE_URL` | endereço final do app (ex.: `https://ritmus-performance-navy.vercel.app`) |
+   | `CRON_SECRET` | texto aleatório (`openssl rand -hex 24`); protege o ping diário do banco |
+
+   **Ping diário:** enquanto o Supabase estiver no plano gratuito, a Vercel chama `/api/cron/keepalive` uma vez por dia (`vercel.json`) para o projeto não ser pausado por inatividade. Se mesmo assim ele pausar (o app abre, mas ninguém consegue entrar e `/api/health` responde 503), entre no painel do Supabase e clique em **Restore project**. Ao assinar o Supabase Pro, remova a rota e o `crons` do `vercel.json`.
 
 3. Depois de cadastrar as variáveis, publique de novo (**Deployments → ⋯ → Redeploy** no último deploy). Endereço atual: `https://ritmus-performance-navy.vercel.app`. Se mudar o domínio depois, atualize `NEXT_PUBLIC_SITE_URL` e a **Site URL** do Supabase: ela é usada nos links de cadastro enviados pelo WhatsApp.
 

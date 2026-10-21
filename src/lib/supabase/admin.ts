@@ -8,7 +8,8 @@ import { supabaseUrl } from "./env"
 /**
  * Cliente com a chave secreta (ignora o RLS). Use SOMENTE para:
  *  - criar e redefinir contas da equipe;
- *  - o formulário público de cadastro (validado pelo token).
+ *  - o formulário público de cadastro (validado pelo token);
+ *  - o ping diário do /api/cron/keepalive (lê só um id, para o banco não pausar).
  * Sempre verifique a permissão de quem chamou antes de usar.
  */
 export function createAdminClient() {
